@@ -1,0 +1,13 @@
+path: /Users/dhwajgoyal/Documents/Claude/billboard_dataset
+train: train/images
+val: train/images
+
+nc: 1
+names: ['billboard']
+
+roboflow:
+  workspace: dhwajs-workspace
+  project: in-game-ad-banners-vswfx
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/dhwajs-workspace/in-game-ad-banners-vswfx/dataset/1

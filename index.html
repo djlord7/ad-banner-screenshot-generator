@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Banner Screenshot Generator</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ad Banner Screenshot Generator</h1>
+            <p>Automated screenshot generation for in-game advertising</p>
+        </header>
+
+        <main>
+            <!-- Game Selection Section -->
+            <section class="selection-panel">
+                <div class="form-group">
+                    <label for="game-select">Select Game:</label>
+                    <select id="game-select" class="form-control">
+                        <option value="">-- Choose a game --</option>
+                    </select>
+                </div>
+
+                <div class="upload-screenshot-section">
+                    <h3>Or Upload New Screenshot</h3>
+                    <p class="help-text">Upload an in-game screenshot and we'll auto-detect billboards</p>
+                    <div class="upload-new-screenshot-area" id="upload-new-screenshot-area">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Click to upload screenshot</p>
+                        <p class="upload-hint">JPG, PNG (max 5MB)</p>
+                    </div>
+                    <input type="file" id="new-screenshot-upload" accept="image/*" style="display: none;">
+
+                    <div id="detection-status" style="display: none; margin-top: 15px;">
+                        <p class="status-message">🔍 <span id="status-text">Processing...</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screenshot Gallery Section -->
+            <section class="gallery-section" id="gallery-section" style="display: none;">
+                <h2>Available Screenshots</h2>
+                <div class="screenshot-gallery" id="screenshot-gallery">
+                    <!-- Gallery items will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Editor Section -->
+            <section class="editor-section" id="editor-section" style="display: none;">
+                <div class="editor-header">
+                    <h2>Banner Editor</h2>
+                    <button id="back-btn" class="btn btn-secondary">← Back to Gallery</button>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-sidebar">
+                        <h3>Upload Banner</h3>
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-prompt">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p>Drag & drop banner image here</p>
+                                <p class="upload-hint">or click to browse</p>
+                            </div>
+                            <input type="file" id="banner-upload" accept="image/*" style="display: none;">
+                        </div>
+
+                        <div class="banner-info" id="banner-info" style="display: none;">
+                            <h4>Banner Details</h4>
+                            <p><strong>Size:</strong> <span id="banner-size-info"></span></p>
+                            <p><strong>Dimensions:</strong> <span id="banner-dimensions"></span></p>
+                            <button id="remove-banner-btn" class="btn btn-danger">Remove Banner</button>
+                        </div>
+
+                        <div class="billboard-controls" id="billboard-controls" style="display: none;">
+                            <h4>Billboard Selection</h4>
+                            <div id="billboard-list">
+                                <!-- Billboard buttons will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="detected-billboards-list" id="detected-billboards-list" style="display: none;">
+                            <h4>Detected Billboards</h4>
+                            <p class="help-text-small">Click a billboard to select it</p>
+                            <div id="detected-list" class="detected-items">
+                                <!-- Detected billboard buttons will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="area-selection-controls" id="area-selection-controls" style="display: none;">
+                            <h4>Define Billboard Area</h4>
+                            <p class="help-text">Select Billboard 1 below, then choose a mode to adjust the billboard position.</p>
+
+                            <div class="mode-selector">
+                                <button id="start-area-selection-btn" class="btn btn-secondary">Rectangle Mode</button>
+                                <button id="start-perspective-mode-btn" class="btn btn-secondary">Perspective Mode</button>
+                            </div>
+
+                            <div id="area-adjust-controls" style="display: none;">
+                                <p class="coordinates-display">
+                                    Position: <span id="area-x">0</span>, <span id="area-y">0</span><br>
+                                    Size: <span id="area-width">0</span> × <span id="area-height">0</span>px
+                                </p>
+                                <button id="confirm-area-btn" class="btn btn-success">Confirm Position</button>
+                                <button id="cancel-area-btn" class="btn btn-danger">Cancel</button>
+                            </div>
+
+                            <div id="perspective-adjust-controls" style="display: none;">
+                                <p class="help-text-small">Drag each corner to match the billboard's perspective</p>
+                                <div class="corner-coordinates">
+                                    <div class="corner-coord">
+                                        <strong>TL:</strong> <span id="corner-tl">0, 0</span>
+                                    </div>
+                                    <div class="corner-coord">
+                                        <strong>TR:</strong> <span id="corner-tr">0, 0</span>
+                                    </div>
+                                    <div class="corner-coord">
+                                        <strong>BL:</strong> <span id="corner-bl">0, 0</span>
+                                    </div>
+                                    <div class="corner-coord">
+                                        <strong>BR:</strong> <span id="corner-br">0, 0</span>
+                                    </div>
+                                </div>
+                                <button id="confirm-perspective-btn" class="btn btn-success">Confirm Perspective</button>
+                                <button id="cancel-perspective-btn" class="btn btn-danger">Cancel</button>
+                            </div>
+                        </div>
+
+                        <div class="export-controls" id="export-controls" style="display: none;">
+                            <h4>Export</h4>
+                            <button id="download-btn" class="btn btn-primary">Download Screenshot</button>
+                        </div>
+                    </div>
+
+                    <div class="editor-canvas-wrapper">
+                        <div class="canvas-container">
+                            <canvas id="preview-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Ad Banner Screenshot Generator v1.0 | Built for automated adtech workflows</p>
+        </footer>
+    </div>
+
+    <!-- ONNX Runtime Web for custom models -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.min.js"></script>
+
+    <!-- TensorFlow.js and COCO-SSD for ML-based detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
+    <!-- OpenCV.js as fallback -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+
+    <script src="js/custom-model.js"></script>
+    <script src="js/detection.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

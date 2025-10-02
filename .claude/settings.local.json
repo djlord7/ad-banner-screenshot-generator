@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/dhwajgoyal/Documents/**)",
+      "Read(//Users/dhwajgoyal/Downloads/**)",
+      "WebSearch",
+      "Bash(unzip:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(open http://localhost:8080)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

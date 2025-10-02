@@ -1,0 +1,79 @@
+{
+  "games": [
+    {
+      "id": "game-1",
+      "name": "Town Go",
+      "screenshots": [
+        {
+          "id": "cr-01",
+          "filename": "towngo_cherifer_ss_pc.png",
+          "bannerSize": "300x600",
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 712,
+              "y": 583,
+              "width": 216,
+              "height": 348,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": { "x": 712, "y": 583 },
+                "topRight": { "x": 928, "y": 583 },
+                "bottomLeft": { "x": 712, "y": 931 },
+                "bottomRight": { "x": 928, "y": 931 }
+              }
+            }
+          ]
+        },
+        {
+          "id": "cr-02",
+          "filename": "city-racer-stadium.jpg",
+          "bannerSize": "300x250",
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 600,
+              "y": 300,
+              "width": 200,
+              "height": 150,
+              "rotation": -5,
+              "perspective": {
+                "topLeft": { "x": 580, "y": 290 },
+                "topRight": { "x": 800, "y": 300 },
+                "bottomLeft": { "x": 590, "y": 440 },
+                "bottomRight": { "x": 810, "y": 450 }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "game-2",
+      "name": "Cooking Diary",
+      "screenshots": [
+        {
+          "id": "cd-01",
+          "filename": "cooking_diary_cherifer_ss_mobile.png",
+          "bannerSize": "300x250",
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1241,
+              "y": 52,
+              "width": 253,
+              "height": 164,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": { "x": 1241, "y": 52 },
+                "topRight": { "x": 1494, "y": 52 },
+                "bottomLeft": { "x": 1241, "y": 216 },
+                "bottomRight": { "x": 1494, "y": 216 }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
