@@ -1193,9 +1193,23 @@ function handleDownload() {
         ctx.drawImage(baseImage, 0, 0);
     }
 
+    // Generate filename
+    let filename = 'banner_screenshot.png';
+    if (currentGame && currentScreenshot) {
+        const gameName = currentGame.name || 'game';
+        const screenshotName = currentScreenshot.filename || 'screenshot';
+        filename = `${gameName}_${screenshotName}_banner.png`;
+    } else if (currentScreenshot) {
+        const screenshotName = currentScreenshot.filename || 'screenshot';
+        filename = `${screenshotName}_banner.png`;
+    } else if (currentGame) {
+        const gameName = currentGame.name || 'game';
+        filename = `${gameName}_banner.png`;
+    }
+
     // Download the clean image
     const link = document.createElement('a');
-    link.download = `${currentGame.name}_${currentScreenshot.filename}_banner.png`;
+    link.download = filename;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
