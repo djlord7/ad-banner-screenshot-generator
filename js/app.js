@@ -94,10 +94,20 @@ function populateGameDropdown() {
 function setupEventListeners() {
     gameSelect.addEventListener('change', handleGameSelection);
     backBtn.addEventListener('click', handleBackToGallery);
-    uploadArea.addEventListener('click', () => bannerUpload.click());
-    bannerUpload.addEventListener('change', handleBannerUpload);
-    downloadBtn.addEventListener('click', handleDownload);
-    removeBannerBtn.addEventListener('click', handleRemoveBanner);
+
+    if (uploadArea) uploadArea.addEventListener('click', () => bannerUpload.click());
+    if (bannerUpload) bannerUpload.addEventListener('change', handleBannerUpload);
+    if (removeBannerBtn) removeBannerBtn.addEventListener('click', handleRemoveBanner);
+
+    // Use event delegation for download button
+    document.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'download-btn') {
+            console.log('Download button clicked via delegation');
+            e.preventDefault();
+            e.stopPropagation();
+            handleDownload();
+        }
+    });
 
     // Settings modal
     const settingsBtn = document.getElementById('settings-btn');
@@ -1181,16 +1191,63 @@ function handleRemoveBanner() {
 
 // Handle download
 function handleDownload() {
-    // Render all checked billboards with their banners
+    console.log('🔽 Download button clicked');
+    console.log('Canvas:', canvas);
+    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+    console.log('baseImage:', baseImage);
+    console.log('currentGame:', currentGame);
+    console.log('currentScreenshot:', currentScreenshot);
+    console.log('selectedBillboardsForRender:', window.selectedBillboardsForRender);
+    console.log('uploadedBanner:', uploadedBanner);
+    console.log('selectedBillboard:', selectedBillboard);
+
+    // Check if we have a valid canvas
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        console.error('Canvas is not initialized');
+        alert('Error: Canvas is not initialized. Please load a screenshot first.');
+        return;
+    }
+
+    // Check if base image exists and is loaded
+    if (!baseImage) {
+        console.error('Base image does not exist');
+        alert('Error: Screenshot image is not loaded. Please load a screenshot first.');
+        return;
+    }
+
+    // If image is still loading, wait for it
+    if (!baseImage.complete) {
+        console.warn('Image still loading, waiting...');
+        baseImage.onload = function() {
+            console.log('Image loaded, retrying download...');
+            handleDownload();
+        };
+        return;
+    }
+
+    // Render final image without outlines
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw base screenshot
+    ctx.drawImage(baseImage, 0, 0);
+
+    // Check workflow type and draw banners accordingly
     if (window.selectedBillboardsForRender && window.selectedBillboardsForRender.length > 0) {
-        drawAllSelectedBillboards(false);
-    } else if (uploadedBanner && selectedBillboard) {
-        // Fallback to old behavior for non-detected screenshots
-        drawBannerOnCanvas(false);
-    } else {
-        // Just base image without outlines
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(baseImage, 0, 0);
+        // Uploaded screenshot workflow - draw selected billboards
+        window.selectedBillboardsForRender.forEach(billboard => {
+            const bannerImage = billboardBanners[billboard.index];
+            if (bannerImage) {
+                drawBannerWithPerspective(bannerImage, billboard.corners);
+            }
+        });
+    } else if (currentScreenshot && currentScreenshot.billboards) {
+        // Pre-configured screenshot workflow - draw all billboards with banners
+        currentScreenshot.billboards.forEach((billboard, index) => {
+            if (billboardBanners[index]) {
+                drawBannerWithPerspective(billboardBanners[index], billboard.perspective);
+            }
+        });
     }
 
     // Generate filename
@@ -1207,20 +1264,29 @@ function handleDownload() {
         filename = `${gameName}_banner.png`;
     }
 
-    // Download the clean image
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    console.log('Generated filename:', filename);
 
-    // Redraw with outlines for preview
+    try {
+        // Download the clean image
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        console.log('Download link created:', link.href.substring(0, 100) + '...');
+        link.click();
+        console.log('✅ Download triggered successfully');
+    } catch (error) {
+        console.error('❌ Error during download:', error);
+        alert('Error downloading image: ' + error.message);
+        return;
+    }
+
+    // Redraw canvas with outlines for preview
     if (detectedRectangles && detectedRectangles.length > 0) {
-        redrawDetectedBillboards();
+        // Uploaded screenshot workflow
         drawAllSelectedBillboards(true);
-    } else if (uploadedBanner && selectedBillboard) {
-        drawBannerOnCanvas(true);
-    } else {
-        loadBaseImage();
+    } else if (currentScreenshot && currentScreenshot.billboards) {
+        // Pre-configured screenshot workflow - redraw with billboards and outlines
+        drawScreenshot();
     }
 }
 
