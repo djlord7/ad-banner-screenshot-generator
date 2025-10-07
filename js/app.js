@@ -305,6 +305,14 @@ function loadScreenshotEditor() {
         areaSelectionControls.style.display = 'block';
     }
 
+    // Show "Set as Default" button for pre-configured screenshots
+    if (currentGame && currentGame.id !== 'uploaded') {
+        const setDefaultContainer = document.getElementById('set-default-container');
+        if (setDefaultContainer) {
+            setDefaultContainer.style.display = 'block';
+        }
+    }
+
     // Render upload slots for all billboards
     renderUploadSlots();
 
