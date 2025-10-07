@@ -1219,14 +1219,19 @@ function handleBackToGallery() {
 // ===== SET AS DEFAULT FUNCTIONS =====
 
 // Handle Set as Default for rectangle mode
-async function handleSetAsDefault() {
+window.handleSetAsDefault = async function handleSetAsDefault() {
+    console.log('🔧 handleSetAsDefault called');
+    console.log('currentGame:', currentGame);
+    console.log('currentScreenshot:', currentScreenshot);
+    console.log('currentScreenshot.billboards:', currentScreenshot?.billboards);
+
     if (!currentGame || currentGame.id === 'uploaded') {
         alert('Set as Default is only available for pre-configured game screenshots.');
         return;
     }
 
-    if (!selectedBillboard || selectedBillboardIndex === null) {
-        alert('Please select a billboard first.');
+    if (!currentScreenshot || !currentScreenshot.billboards || currentScreenshot.billboards.length === 0) {
+        alert('No billboards to save. Please configure at least one billboard first.');
         return;
     }
 
@@ -1244,8 +1249,12 @@ async function handleSetAsDefault() {
         setDefaultBtn.textContent = 'Saving...';
         setDefaultBtn.disabled = true;
 
+        console.log('📡 Fetching games.json from GitHub...');
+
         // Fetch current games.json from GitHub
         const { content: githubGamesData, sha } = await fetchGamesJsonFromGitHub(token);
+
+        console.log('✅ Fetched games.json, finding game and screenshot...');
 
         // Find the game and screenshot in the data
         const gameIndex = githubGamesData.games.findIndex(g => g.id === currentGame.id);
@@ -1260,21 +1269,18 @@ async function handleSetAsDefault() {
             throw new Error(`Screenshot ${currentScreenshot.filename} not found in games.json`);
         }
 
-        // Update the billboard coordinates
-        const billboards = githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards || [];
+        console.log('✅ Found game and screenshot, updating billboards...');
+        console.log('Saving billboards:', currentScreenshot.billboards);
 
-        // Update or add the billboard at the selected index
-        if (selectedBillboardIndex < billboards.length) {
-            billboards[selectedBillboardIndex] = selectedBillboard;
-        } else {
-            // Add new billboard if index doesn't exist
-            billboards.push(selectedBillboard);
-        }
+        // Save ALL billboards for this screenshot
+        githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards = currentScreenshot.billboards;
 
-        githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards = billboards;
+        console.log('📤 Committing to GitHub...');
 
         // Commit the updated games.json to GitHub
         await commitGamesJsonToGitHub(token, githubGamesData, sha);
+
+        console.log('✅ Successfully committed to GitHub');
 
         // Update local gamesData to reflect changes
         gamesData = githubGamesData;
@@ -1283,10 +1289,10 @@ async function handleSetAsDefault() {
         setDefaultBtn.textContent = originalText;
         setDefaultBtn.disabled = false;
 
-        alert('✅ Success!\n\nBillboard coordinates have been saved as default for this screenshot.');
+        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.`);
 
     } catch (error) {
-        console.error('Error saving to GitHub:', error);
+        console.error('❌ Error saving to GitHub:', error);
 
         // Reset button
         const setDefaultBtn = document.getElementById('set-default-btn');
