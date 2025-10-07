@@ -11,7 +11,30 @@
         <header>
             <h1>Ad Banner Screenshot Generator</h1>
             <p>Automated screenshot generation for in-game advertising</p>
+            <button id="settings-btn" class="btn btn-secondary" style="position: absolute; top: 20px; right: 20px;">⚙️ Settings</button>
         </header>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>GitHub Settings</h2>
+                <p>To enable auto-save to GitHub, provide your Personal Access Token:</p>
+                <div class="form-group">
+                    <label for="github-token">GitHub Token:</label>
+                    <input type="password" id="github-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
+                    <p class="help-text-small" style="margin-top: 5px;">
+                        <a href="https://github.com/settings/tokens/new" target="_blank">Create token here</a>
+                        with 'repo' scope
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="save-token-btn" class="btn btn-primary">Save Token</button>
+                    <button id="clear-token-btn" class="btn btn-danger">Clear Token</button>
+                    <button id="close-settings-btn" class="btn btn-secondary">Close</button>
+                </div>
+                <p id="token-status" style="margin-top: 15px; font-size: 14px;"></p>
+            </div>
+        </div>
 
         <main>
             <!-- Game Selection Section -->
@@ -119,6 +142,11 @@
                                 </div>
                                 <button id="confirm-perspective-btn" class="btn btn-success">Confirm Perspective</button>
                                 <button id="cancel-perspective-btn" class="btn btn-danger">Cancel</button>
+                            </div>
+
+                            <!-- Set as Default buttons (shown after confirm) -->
+                            <div id="set-default-container" style="display: none; margin-top: 15px;">
+                                <button id="set-default-btn" class="btn btn-primary">Set as Default</button>
                             </div>
                         </div>
 

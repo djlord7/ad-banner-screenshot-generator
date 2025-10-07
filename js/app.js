@@ -98,6 +98,23 @@ function setupEventListeners() {
     downloadBtn.addEventListener('click', handleDownload);
     removeBannerBtn.addEventListener('click', handleRemoveBanner);
 
+    // Settings modal
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const saveTokenBtn = document.getElementById('save-token-btn');
+    const clearTokenBtn = document.getElementById('clear-token-btn');
+
+    if (settingsBtn) settingsBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'flex';
+        loadTokenStatus();
+    });
+    if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+    });
+    if (saveTokenBtn) saveTokenBtn.addEventListener('click', saveGitHubToken);
+    if (clearTokenBtn) clearTokenBtn.addEventListener('click', clearGitHubToken);
+
     // Drag and drop
     uploadArea.addEventListener('dragover', handleDragOver);
     uploadArea.addEventListener('dragleave', handleDragLeave);
@@ -107,6 +124,7 @@ function setupEventListeners() {
     const startAreaBtn = document.getElementById('start-area-selection-btn');
     const confirmAreaBtn = document.getElementById('confirm-area-btn');
     const cancelAreaBtn = document.getElementById('cancel-area-btn');
+    const setDefaultBtn = document.getElementById('set-default-btn');
     const startPerspectiveBtn = document.getElementById('start-perspective-mode-btn');
     const confirmPerspectiveBtn = document.getElementById('confirm-perspective-btn');
     const cancelPerspectiveBtn = document.getElementById('cancel-perspective-btn');
@@ -114,6 +132,7 @@ function setupEventListeners() {
     if (startAreaBtn) startAreaBtn.addEventListener('click', startAreaSelection);
     if (confirmAreaBtn) confirmAreaBtn.addEventListener('click', confirmAreaSelection);
     if (cancelAreaBtn) cancelAreaBtn.addEventListener('click', cancelAreaSelection);
+    if (setDefaultBtn) setDefaultBtn.addEventListener('click', handleSetAsDefault);
     if (startPerspectiveBtn) startPerspectiveBtn.addEventListener('click', startPerspectiveMode);
     if (confirmPerspectiveBtn) confirmPerspectiveBtn.addEventListener('click', confirmPerspectiveMode);
     if (cancelPerspectiveBtn) cancelPerspectiveBtn.addEventListener('click', cancelPerspectiveMode);
@@ -203,6 +222,24 @@ function loadScreenshotEditor() {
     bannerInfo.style.display = 'none';
     billboardControls.style.display = 'none';
     exportControls.style.display = 'none';
+
+    // If no billboards exist, create a default placeholder
+    if (!currentScreenshot.billboards || currentScreenshot.billboards.length === 0) {
+        currentScreenshot.billboards = [{
+            id: 'billboard-1',
+            x: 100,
+            y: 100,
+            width: 300,
+            height: 600,
+            rotation: 0,
+            perspective: {
+                topLeft: { x: 100, y: 100 },
+                topRight: { x: 400, y: 100 },
+                bottomLeft: { x: 100, y: 700 },
+                bottomRight: { x: 400, y: 700 }
+            }
+        }];
+    }
 
     // Show area selection controls
     const areaSelectionControls = document.getElementById('area-selection-controls');
@@ -784,6 +821,87 @@ function handleBackToGallery() {
     handleRemoveBanner();
 }
 
+// ===== SET AS DEFAULT FUNCTIONS =====
+
+// Handle Set as Default for rectangle mode
+async function handleSetAsDefault() {
+    if (!currentGame || currentGame.id === 'uploaded') {
+        alert('Set as Default is only available for pre-configured game screenshots.');
+        return;
+    }
+
+    if (!selectedBillboard || selectedBillboardIndex === null) {
+        alert('Please select a billboard first.');
+        return;
+    }
+
+    // Check if GitHub token is configured
+    const token = getGitHubToken();
+    if (!token) {
+        alert('GitHub token not configured!\n\nPlease click the Settings button (⚙️) in the header to configure your GitHub Personal Access Token first.');
+        return;
+    }
+
+    try {
+        // Show loading message
+        const setDefaultBtn = document.getElementById('set-default-btn');
+        const originalText = setDefaultBtn.textContent;
+        setDefaultBtn.textContent = 'Saving...';
+        setDefaultBtn.disabled = true;
+
+        // Fetch current games.json from GitHub
+        const { content: githubGamesData, sha } = await fetchGamesJsonFromGitHub(token);
+
+        // Find the game and screenshot in the data
+        const gameIndex = githubGamesData.games.findIndex(g => g.id === currentGame.id);
+        if (gameIndex === -1) {
+            throw new Error(`Game ${currentGame.name} not found in games.json`);
+        }
+
+        const screenshotIndex = githubGamesData.games[gameIndex].screenshots.findIndex(
+            s => s.id === currentScreenshot.id
+        );
+        if (screenshotIndex === -1) {
+            throw new Error(`Screenshot ${currentScreenshot.filename} not found in games.json`);
+        }
+
+        // Update the billboard coordinates
+        const billboards = githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards || [];
+
+        // Update or add the billboard at the selected index
+        if (selectedBillboardIndex < billboards.length) {
+            billboards[selectedBillboardIndex] = selectedBillboard;
+        } else {
+            // Add new billboard if index doesn't exist
+            billboards.push(selectedBillboard);
+        }
+
+        githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards = billboards;
+
+        // Commit the updated games.json to GitHub
+        await commitGamesJsonToGitHub(token, githubGamesData, sha);
+
+        // Update local gamesData to reflect changes
+        gamesData = githubGamesData;
+
+        // Reset button and show success
+        setDefaultBtn.textContent = originalText;
+        setDefaultBtn.disabled = false;
+
+        alert('✅ Success!\n\nBillboard coordinates have been saved as default for this screenshot.');
+
+    } catch (error) {
+        console.error('Error saving to GitHub:', error);
+
+        // Reset button
+        const setDefaultBtn = document.getElementById('set-default-btn');
+        setDefaultBtn.textContent = 'Set as Default';
+        setDefaultBtn.disabled = false;
+
+        alert(`❌ Failed to save to GitHub:\n\n${error.message}\n\nPlease check:\n1. Your GitHub token has 'repo' permissions\n2. You have access to the repository\n3. Your internet connection is working`);
+    }
+}
+
 // ===== AREA SELECTION FUNCTIONS =====
 
 // Start area selection mode
@@ -858,6 +976,14 @@ function confirmAreaSelection() {
     canvas.classList.remove('area-selection-active');
     document.getElementById('area-adjust-controls').style.display = 'none';
     document.getElementById('start-area-selection-btn').style.display = 'block';
+
+    // Show "Set as Default" button for pre-configured screenshots
+    if (currentGame && currentGame.id !== 'uploaded') {
+        const setDefaultContainer = document.getElementById('set-default-container');
+        if (setDefaultContainer) {
+            setDefaultContainer.style.display = 'block';
+        }
+    }
 
     // Show success message
     alert('Billboard area updated! Coordinates:\nTop-Left: (' + updatedPerspective.topLeft.x + ', ' + updatedPerspective.topLeft.y + ')\nSize: ' + Math.round(selectionRect.width) + ' × ' + Math.round(selectionRect.height) + 'px');
@@ -1197,6 +1323,14 @@ function confirmPerspectiveMode() {
     document.querySelector('.mode-selector').style.display = 'flex';
     draggedPerspectiveCorner = null;
 
+    // Show "Set as Default" button for pre-configured screenshots
+    if (currentGame && currentGame.id !== 'uploaded') {
+        const setDefaultContainer = document.getElementById('set-default-container');
+        if (setDefaultContainer) {
+            setDefaultContainer.style.display = 'block';
+        }
+    }
+
     alert('Perspective applied! Billboard corners:\nTL: (' + perspectiveCorners.topLeft.x + ', ' + perspectiveCorners.topLeft.y + ')\nTR: (' + perspectiveCorners.topRight.x + ', ' + perspectiveCorners.topRight.y + ')\nBL: (' + perspectiveCorners.bottomLeft.x + ', ' + perspectiveCorners.bottomLeft.y + ')\nBR: (' + perspectiveCorners.bottomRight.x + ', ' + perspectiveCorners.bottomRight.y + ')');
 
     // Redraw - check if using detected billboards workflow or pre-configured screenshots
@@ -1462,4 +1596,112 @@ function handlePerspectiveMouseUp(e) {
     draggedPerspectiveCorner = null;
     // Redraw without magnifier
     redrawWithPerspective();
+}
+
+// ===== GITHUB API FUNCTIONS =====
+
+// GitHub configuration
+const GITHUB_OWNER = 'djlord7';
+const GITHUB_REPO = 'ad-banner-screenshot-generator';
+const GITHUB_BRANCH = 'main';
+const GAMES_JSON_PATH = 'data/games.json';
+
+// Save GitHub token
+function saveGitHubToken() {
+    const tokenInput = document.getElementById('github-token');
+    const token = tokenInput.value.trim();
+    
+    if (!token) {
+        alert('Please enter a token');
+        return;
+    }
+    
+    localStorage.setItem('github_token', token);
+    document.getElementById('token-status').textContent = '✅ Token saved successfully!';
+    document.getElementById('token-status').style.color = '#10b981';
+    
+    setTimeout(() => {
+        document.getElementById('settings-modal').style.display = 'none';
+    }, 1500);
+}
+
+// Clear GitHub token
+function clearGitHubToken() {
+    localStorage.removeItem('github_token');
+    document.getElementById('github-token').value = '';
+    document.getElementById('token-status').textContent = 'Token cleared';
+    document.getElementById('token-status').style.color = '#ef4444';
+}
+
+// Load token status
+function loadTokenStatus() {
+    const token = localStorage.getItem('github_token');
+    const statusEl = document.getElementById('token-status');
+    
+    if (token) {
+        statusEl.textContent = '✓ Token is configured';
+        statusEl.style.color = '#10b981';
+        document.getElementById('github-token').value = token;
+    } else {
+        statusEl.textContent = 'No token configured';
+        statusEl.style.color = '#94a3b8';
+    }
+}
+
+// Get GitHub token
+function getGitHubToken() {
+    return localStorage.getItem('github_token');
+}
+
+// Fetch current games.json from GitHub
+async function fetchGamesJsonFromGitHub(token) {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GAMES_JSON_PATH}?ref=${GITHUB_BRANCH}`;
+    
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Failed to fetch games.json: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const content = atob(data.content); // Decode base64
+    
+    return {
+        content: JSON.parse(content),
+        sha: data.sha // Need SHA for updating
+    };
+}
+
+// Commit updated games.json to GitHub
+async function commitGamesJsonToGitHub(token, gamesData, sha) {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GAMES_JSON_PATH}`;
+    
+    const content = btoa(JSON.stringify(gamesData, null, 2)); // Encode to base64
+    
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            message: `Update billboard coordinates for ${currentGame.name} - ${currentScreenshot.filename}`,
+            content: content,
+            sha: sha,
+            branch: GITHUB_BRANCH
+        })
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Failed to commit: ${error.message}`);
+    }
+    
+    return await response.json();
 }
