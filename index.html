@@ -70,25 +70,9 @@
                     </div>
 
                     <div class="editor-sidebar">
-                        <h3>Upload Banner</h3>
-                        <div class="upload-area" id="upload-area">
-                            <div class="upload-prompt">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
-                                <p>Drag & drop banner image here</p>
-                                <p class="upload-hint">or click to browse</p>
-                            </div>
-                            <input type="file" id="banner-upload" accept="image/*" style="display: none;">
-                        </div>
-
-                        <div class="banner-info" id="banner-info" style="display: none;">
-                            <h4>Banner Details</h4>
-                            <p><strong>Size:</strong> <span id="banner-size-info"></span></p>
-                            <p><strong>Dimensions:</strong> <span id="banner-dimensions"></span></p>
-                            <button id="remove-banner-btn" class="btn btn-danger">Remove Banner</button>
+                        <h3>Upload Banners</h3>
+                        <div class="upload-slots-container" id="upload-slots-container">
+                            <!-- Dynamic upload slots will be populated here -->
                         </div>
 
                         <div class="billboard-controls" id="billboard-controls" style="display: none;">
@@ -108,20 +92,31 @@
 
                         <div class="area-selection-controls" id="area-selection-controls" style="display: none;">
                             <h4>Define Billboard Area</h4>
-                            <p class="help-text">Select Billboard 1 below, then choose a mode to adjust the billboard position.</p>
+                            <p class="help-text">Select a billboard to transform, then choose a mode to adjust its position.</p>
+
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="billboard-selector">Select Billboard to Transform:</label>
+                                <select id="billboard-selector" class="form-control billboard-selector-dropdown" onchange="console.log('Dropdown changed:', this.value); window.selectBillboardForTransform && window.selectBillboardForTransform(parseInt(this.value));">
+                                    <!-- Options populated dynamically -->
+                                </select>
+                            </div>
 
                             <div class="mode-selector">
-                                <button id="start-area-selection-btn" class="btn btn-secondary">Rectangle Mode</button>
-                                <button id="start-perspective-mode-btn" class="btn btn-secondary">Perspective Mode</button>
+                                <button id="start-area-selection-btn" class="btn btn-secondary" onclick="console.log('Rectangle Mode clicked'); window.startAreaSelection && window.startAreaSelection();">Rectangle Mode</button>
+                                <button id="start-perspective-mode-btn" class="btn btn-secondary" onclick="console.log('Perspective Mode clicked'); window.startPerspectiveMode && window.startPerspectiveMode();">Perspective Mode</button>
                             </div>
+
+                            <button id="add-billboard-btn" class="btn btn-success btn-add-billboard" style="margin-top: 15px;" onclick="console.log('Button clicked!'); window.addNewBillboard && window.addNewBillboard();">
+                                <span style="font-size: 1.2em;">+</span> Add Another Billboard
+                            </button>
 
                             <div id="area-adjust-controls" style="display: none;">
                                 <p class="coordinates-display">
                                     Position: <span id="area-x">0</span>, <span id="area-y">0</span><br>
                                     Size: <span id="area-width">0</span> × <span id="area-height">0</span>px
                                 </p>
-                                <button id="confirm-area-btn" class="btn btn-success">Confirm Position</button>
-                                <button id="cancel-area-btn" class="btn btn-danger">Cancel</button>
+                                <button id="confirm-area-btn" class="btn btn-success" onclick="console.log('Confirm clicked'); window.confirmAreaSelection && window.confirmAreaSelection();">Confirm Position</button>
+                                <button id="cancel-area-btn" class="btn btn-danger" onclick="console.log('Cancel clicked'); window.cancelAreaSelection && window.cancelAreaSelection();">Cancel</button>
                             </div>
 
                             <div id="perspective-adjust-controls" style="display: none;">
@@ -140,8 +135,8 @@
                                         <strong>BR:</strong> <span id="corner-br">0, 0</span>
                                     </div>
                                 </div>
-                                <button id="confirm-perspective-btn" class="btn btn-success">Confirm Perspective</button>
-                                <button id="cancel-perspective-btn" class="btn btn-danger">Cancel</button>
+                                <button id="confirm-perspective-btn" class="btn btn-success" onclick="console.log('Confirm perspective clicked'); window.confirmPerspectiveMode && window.confirmPerspectiveMode();">Confirm Perspective</button>
+                                <button id="cancel-perspective-btn" class="btn btn-danger" onclick="console.log('Cancel perspective clicked'); window.cancelPerspectiveMode && window.cancelPerspectiveMode();">Cancel</button>
                             </div>
 
                             <!-- Set as Default buttons (shown after confirm) -->

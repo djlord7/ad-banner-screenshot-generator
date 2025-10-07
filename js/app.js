@@ -5,6 +5,7 @@ let currentScreenshot = null;
 let uploadedBanner = null;
 let selectedBillboard = null;
 let selectedBillboardIndex = null;
+let transformTargetBillboardIndex = 0; // For dropdown selection in transform mode
 
 // Canvas elements
 let canvas = null;
@@ -120,6 +121,26 @@ function setupEventListeners() {
     uploadArea.addEventListener('dragleave', handleDragLeave);
     uploadArea.addEventListener('drop', handleDrop);
 
+    // Billboard management - use event delegation
+    document.addEventListener('click', (e) => {
+        // Check if clicked element or its parent is the add billboard button
+        const target = e.target.closest('#add-billboard-btn');
+        if (target) {
+            console.log('Add billboard button clicked via delegation');
+            e.preventDefault();
+            e.stopPropagation();
+            addNewBillboard();
+        }
+    });
+
+    document.addEventListener('change', (e) => {
+        console.log('Change event detected on:', e.target.id, 'value:', e.target.value);
+        if (e.target && e.target.id === 'billboard-selector') {
+            console.log('Billboard selector changed to:', e.target.value);
+            selectBillboardForTransform(parseInt(e.target.value));
+        }
+    });
+
     // Area selection
     const startAreaBtn = document.getElementById('start-area-selection-btn');
     const confirmAreaBtn = document.getElementById('confirm-area-btn');
@@ -137,10 +158,44 @@ function setupEventListeners() {
     if (confirmPerspectiveBtn) confirmPerspectiveBtn.addEventListener('click', confirmPerspectiveMode);
     if (cancelPerspectiveBtn) cancelPerspectiveBtn.addEventListener('click', cancelPerspectiveMode);
 
-    // Canvas mouse events
-    canvas.addEventListener('mousedown', handleCanvasMouseDown);
-    canvas.addEventListener('mousemove', handleCanvasMouseMove);
-    canvas.addEventListener('mouseup', handleCanvasMouseUp);
+    // Canvas mouse events - attach to canvas
+    attachCanvasEventListeners();
+}
+
+// Attach canvas event listeners (can be called multiple times)
+function attachCanvasEventListeners() {
+    if (!canvas) {
+        console.error('❌ CANVAS NOT FOUND!');
+        return;
+    }
+
+    console.log('🎨 Attaching canvas event listeners...');
+    console.log('🎨 Canvas element:', canvas);
+    console.log('🎨 Canvas dimensions:', canvas.width, 'x', canvas.height);
+    console.log('🎨 Canvas display:', window.getComputedStyle(canvas).display);
+    console.log('🎨 Canvas visibility:', window.getComputedStyle(canvas).visibility);
+    console.log('🎨 Canvas pointer-events:', window.getComputedStyle(canvas).pointerEvents);
+
+    // Add test click listener to verify events work
+    canvas.onclick = function(e) {
+        console.log('🖱️ TEST ONCLICK EVENT FIRED at', e.clientX, e.clientY);
+    };
+
+    canvas.onmousedown = function(e) {
+        console.log('🖱️ ONMOUSEDOWN EVENT FIRED');
+        handleCanvasMouseDown(e);
+    };
+
+    canvas.onmousemove = function(e) {
+        handleCanvasMouseMove(e);
+    };
+
+    canvas.onmouseup = function(e) {
+        console.log('🖱️ ONMOUSEUP EVENT FIRED');
+        handleCanvasMouseUp(e);
+    };
+
+    console.log('✅ Canvas event listeners attached successfully using on* properties');
 }
 
 // Handle game selection
@@ -218,10 +273,13 @@ function loadScreenshotEditor() {
     uploadedBanner = null;
     selectedBillboard = null;
     selectedBillboardIndex = null;
+    transformTargetBillboardIndex = 0;
     areaSelectionMode = false;
-    bannerInfo.style.display = 'none';
     billboardControls.style.display = 'none';
     exportControls.style.display = 'none';
+
+    // Clear billboard banners
+    billboardBanners = {};
 
     // If no billboards exist, create a default placeholder
     if (!currentScreenshot.billboards || currentScreenshot.billboards.length === 0) {
@@ -247,6 +305,15 @@ function loadScreenshotEditor() {
         areaSelectionControls.style.display = 'block';
     }
 
+    // Render upload slots for all billboards
+    renderUploadSlots();
+
+    // Populate billboard dropdown
+    populateBillboardDropdown();
+
+    // Select first billboard by default
+    selectBillboardForTransform(0);
+
     // Load base screenshot image
     loadBaseImage();
 
@@ -267,6 +334,10 @@ function loadBaseImage() {
 
         // Draw billboard outlines
         drawBillboardOutlines();
+
+        // Re-attach event listeners after canvas is resized
+        console.log('📸 Image loaded, re-attaching canvas event listeners...');
+        attachCanvasEventListeners();
     };
     baseImage.onerror = function() {
         // Fallback to placeholder if image fails to load
@@ -285,6 +356,10 @@ function loadBaseImage() {
         ctx.fillText('Check file exists in /public/screenshots/', canvas.width / 2, canvas.height / 2 + 50);
 
         drawBillboardOutlines();
+
+        // Re-attach event listeners after canvas is resized
+        console.log('📸 Image error, re-attaching canvas event listeners...');
+        attachCanvasEventListeners();
     };
     baseImage.src = `public/screenshots/${currentScreenshot.filename}`;
 }
@@ -488,11 +563,37 @@ function interpolateQuad(topLeft, topRight, bottomLeft, bottomRight, u, v) {
     };
 }
 
+// Draw the screenshot with billboards
+function drawScreenshot() {
+    if (!baseImage || !baseImage.complete) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw base screenshot
+    ctx.drawImage(baseImage, 0, 0);
+
+    // Draw all uploaded banners on their billboards
+    currentScreenshot.billboards.forEach((billboard, index) => {
+        if (billboardBanners[index]) {
+            drawBannerWithPerspective(billboardBanners[index], billboard.perspective);
+        }
+    });
+
+    // Draw billboard outlines
+    drawBillboardOutlines();
+}
+
 // Draw billboard outlines on canvas
 function drawBillboardOutlines() {
+    if (!currentScreenshot || !currentScreenshot.billboards) return;
+
     currentScreenshot.billboards.forEach((billboard, index) => {
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 3;
+        const isSelected = index === transformTargetBillboardIndex;
+
+        // Different styling for selected billboard
+        ctx.strokeStyle = isSelected ? '#16a34a' : '#3b82f6';
+        ctx.lineWidth = isSelected ? 5 : 3;
         ctx.setLineDash([10, 5]);
 
         const { topLeft, topRight, bottomLeft, bottomRight } = billboard.perspective;
@@ -507,11 +608,41 @@ function drawBillboardOutlines() {
 
         ctx.setLineDash([]);
 
-        // Draw billboard number
-        ctx.fillStyle = '#3b82f6';
-        ctx.font = '24px Arial';
+        // Draw billboard number with background
+        const labelText = `Billboard ${index + 1}`;
+        const labelX = (topLeft.x + topRight.x) / 2;
+        const labelY = topLeft.y - 10;
+
+        ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(`Billboard ${index + 1}`, (topLeft.x + topRight.x) / 2, topLeft.y - 10);
+        ctx.textBaseline = 'bottom';
+
+        // Background for label
+        const metrics = ctx.measureText(labelText);
+        const padding = 6;
+        ctx.fillStyle = isSelected ? '#16a34a' : '#3b82f6';
+        ctx.fillRect(
+            labelX - metrics.width / 2 - padding,
+            labelY - 20 - padding,
+            metrics.width + padding * 2,
+            20 + padding * 2
+        );
+
+        // Label text
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(labelText, labelX, labelY);
+
+        // Draw corner handles if selected (in edit mode)
+        if (isSelected && (areaSelectionMode || perspectiveMode)) {
+            const corners = [topLeft, topRight, bottomLeft, bottomRight];
+            corners.forEach(corner => {
+                ctx.fillStyle = '#16a34a';
+                ctx.fillRect(corner.x - 5, corner.y - 5, 10, 10);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(corner.x - 5, corner.y - 5, 10, 10);
+            });
+        }
     });
 }
 
@@ -539,10 +670,274 @@ function selectBillboard(index) {
         btn.classList.toggle('active', i === index);
     });
 
-    // Redraw canvas with banner if available
-    if (uploadedBanner) {
-        drawComposite();
+    // Redraw canvas
+    drawScreenshot();
+}
+
+// ===== MULTI-BILLBOARD MANAGEMENT =====
+
+// Add new billboard
+window.addNewBillboard = function addNewBillboard() {
+    console.log('addNewBillboard called');
+    console.log('currentScreenshot:', currentScreenshot);
+    console.log('billboards:', currentScreenshot?.billboards);
+
+    if (!currentScreenshot || !currentScreenshot.billboards) {
+        alert('Please load a screenshot first.');
+        return;
     }
+
+    const lastBillboard = currentScreenshot.billboards[currentScreenshot.billboards.length - 1];
+    console.log('Last billboard:', lastBillboard);
+
+    // Calculate offset from last billboard's perspective
+    const lastTopLeft = lastBillboard.perspective.topLeft;
+    const offsetX = 50;
+    const offsetY = 50;
+
+    // New position with boundary checks
+    let newX = Math.min(lastTopLeft.x + offsetX, canvas.width - 350);
+    let newY = Math.min(lastTopLeft.y + offsetY, canvas.height - 650);
+
+    // If we're too far right or bottom, wrap to a different position
+    if (newX + 300 > canvas.width) newX = 50;
+    if (newY + 600 > canvas.height) newY = 50;
+
+    const newBillboard = {
+        id: `billboard-${Date.now()}`,
+        x: newX,
+        y: newY,
+        width: 300,
+        height: 600,
+        rotation: 0,
+        perspective: {
+            topLeft: { x: newX, y: newY },
+            topRight: { x: newX + 300, y: newY },
+            bottomLeft: { x: newX, y: newY + 600 },
+            bottomRight: { x: newX + 300, y: newY + 600 }
+        }
+    };
+
+    currentScreenshot.billboards.push(newBillboard);
+
+    // Refresh UI
+    renderUploadSlots();
+    populateBillboardDropdown();
+
+    // Select the new billboard for transform
+    transformTargetBillboardIndex = currentScreenshot.billboards.length - 1;
+    const dropdown = document.getElementById('billboard-selector');
+    if (dropdown) {
+        dropdown.value = transformTargetBillboardIndex;
+    }
+    selectBillboardForTransform(transformTargetBillboardIndex);
+
+    // Redraw canvas
+    drawScreenshot();
+}
+
+// Delete billboard
+window.deleteBillboard = function deleteBillboard(index) {
+    if (!currentScreenshot || !currentScreenshot.billboards) {
+        return;
+    }
+
+    if (currentScreenshot.billboards.length <= 1) {
+        alert('Cannot delete the last billboard. At least one billboard is required.');
+        return;
+    }
+
+    const billboardNum = index + 1;
+    if (!confirm(`Are you sure you want to remove Billboard ${billboardNum}?`)) {
+        return;
+    }
+
+    // Remove billboard
+    currentScreenshot.billboards.splice(index, 1);
+
+    // Remove associated banner if exists
+    if (billboardBanners[index]) {
+        delete billboardBanners[index];
+    }
+
+    // Update transformTargetBillboardIndex if needed
+    if (transformTargetBillboardIndex >= currentScreenshot.billboards.length) {
+        transformTargetBillboardIndex = currentScreenshot.billboards.length - 1;
+    }
+
+    // Refresh UI
+    renderUploadSlots();
+    populateBillboardDropdown();
+
+    // Update dropdown selection
+    document.getElementById('billboard-selector').value = transformTargetBillboardIndex;
+    selectBillboardForTransform(transformTargetBillboardIndex);
+
+    // Redraw canvas
+    drawScreenshot();
+}
+
+// Select billboard for transform
+window.selectBillboardForTransform = function selectBillboardForTransform(index) {
+    console.log('selectBillboardForTransform called with index:', index);
+    console.log('Available billboards:', currentScreenshot.billboards.length);
+
+    transformTargetBillboardIndex = index;
+    selectedBillboardIndex = index;
+    selectedBillboard = currentScreenshot.billboards[index];
+
+    console.log('Selected billboard:', selectedBillboard);
+    console.log('transformTargetBillboardIndex:', transformTargetBillboardIndex);
+
+    // Redraw canvas to highlight selected billboard
+    drawScreenshot();
+}
+
+// Populate billboard dropdown
+function populateBillboardDropdown() {
+    const dropdown = document.getElementById('billboard-selector');
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '';
+    currentScreenshot.billboards.forEach((billboard, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `Billboard ${index + 1}`;
+        dropdown.appendChild(option);
+    });
+
+    dropdown.value = transformTargetBillboardIndex;
+}
+
+// Render upload slots dynamically
+function renderUploadSlots() {
+    const container = document.getElementById('upload-slots-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    currentScreenshot.billboards.forEach((billboard, index) => {
+        const slotCard = document.createElement('div');
+        slotCard.className = 'upload-slot-card';
+        slotCard.innerHTML = `
+            <div class="upload-slot-header">
+                <h4>Billboard ${index + 1}</h4>
+                <button class="delete-billboard-btn" data-index="${index}" title="Delete this billboard">
+                    🗑️
+                </button>
+            </div>
+            <div class="upload-area upload-slot-area" data-index="${index}">
+                <div class="upload-prompt">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Upload banner ${index + 1}</p>
+                    <p class="upload-hint">Drag & drop or click</p>
+                </div>
+                <input type="file" class="banner-upload-input" data-index="${index}" accept="image/*" style="display: none;">
+            </div>
+            <div class="banner-info-slot" id="banner-info-${index}" style="display: none;">
+                <p><strong>Size:</strong> <span class="banner-size-info"></span></p>
+                <p><strong>Dimensions:</strong> <span class="banner-dimensions"></span></p>
+                <button class="btn btn-danger btn-sm remove-banner-btn" data-index="${index}">Remove Banner</button>
+            </div>
+        `;
+
+        container.appendChild(slotCard);
+
+        // Add event listeners
+        const uploadArea = slotCard.querySelector('.upload-slot-area');
+        const fileInput = slotCard.querySelector('.banner-upload-input');
+        const deleteBtn = slotCard.querySelector('.delete-billboard-btn');
+        const removeBannerBtn = slotCard.querySelector('.remove-banner-btn');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleBannerUploadForSlot(e, index));
+        deleteBtn.addEventListener('click', () => deleteBillboard(index));
+        if (removeBannerBtn) {
+            removeBannerBtn.addEventListener('click', () => removeBannerFromSlot(index));
+        }
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadBannerImageForSlot(file, index);
+            }
+        });
+    });
+}
+
+// Handle banner upload for specific slot
+function handleBannerUploadForSlot(e, index) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        loadBannerImageForSlot(file, index);
+    }
+}
+
+// Load banner image for specific slot
+function loadBannerImageForSlot(file, index) {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            // Store banner for this billboard
+            billboardBanners[index] = img;
+
+            // Update UI for this slot
+            const bannerInfo = document.getElementById(`banner-info-${index}`);
+            if (bannerInfo) {
+                bannerInfo.style.display = 'block';
+                const sizeInfo = bannerInfo.querySelector('.banner-size-info');
+                const dimensionsInfo = bannerInfo.querySelector('.banner-dimensions');
+
+                if (sizeInfo) sizeInfo.textContent = currentScreenshot.bannerSize || '300x600';
+                if (dimensionsInfo) dimensionsInfo.textContent = `${img.width} × ${img.height}px`;
+            }
+
+            // Select this billboard and redraw
+            selectBillboard(index);
+            drawScreenshot();
+
+            // Show export controls
+            exportControls.style.display = 'block';
+        };
+        img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+// Remove banner from specific slot
+function removeBannerFromSlot(index) {
+    delete billboardBanners[index];
+
+    const bannerInfo = document.getElementById(`banner-info-${index}`);
+    if (bannerInfo) {
+        bannerInfo.style.display = 'none';
+    }
+
+    const fileInput = document.querySelector(`.banner-upload-input[data-index="${index}"]`);
+    if (fileInput) {
+        fileInput.value = '';
+    }
+
+    // Redraw canvas
+    drawScreenshot();
 }
 
 // Handle banner upload
@@ -905,19 +1300,29 @@ async function handleSetAsDefault() {
 // ===== AREA SELECTION FUNCTIONS =====
 
 // Start area selection mode
-function startAreaSelection() {
+window.startAreaSelection = function startAreaSelection() {
+    console.log('startAreaSelection called');
+    console.log('transformTargetBillboardIndex:', transformTargetBillboardIndex);
+    console.log('currentScreenshot.billboards:', currentScreenshot.billboards);
+
     areaSelectionMode = true;
     canvas.classList.add('area-selection-active');
 
-    // Initialize selection rect with current billboard if exists
-    if (selectedBillboard) {
-        const { topLeft, bottomRight } = selectedBillboard.perspective;
+    // Use the transform target billboard
+    const targetBillboard = currentScreenshot.billboards[transformTargetBillboardIndex];
+    console.log('Target billboard from index:', targetBillboard);
+
+    // Initialize selection rect with target billboard
+    if (targetBillboard) {
+        const { topLeft, bottomRight } = targetBillboard.perspective;
         selectionRect = {
             x: topLeft.x,
             y: topLeft.y,
             width: bottomRight.x - topLeft.x,
             height: bottomRight.y - topLeft.y
         };
+        selectedBillboard = targetBillboard;
+        selectedBillboardIndex = transformTargetBillboardIndex;
     } else {
         // Default starting size
         selectionRect = {
@@ -930,24 +1335,35 @@ function startAreaSelection() {
 
     document.getElementById('area-adjust-controls').style.display = 'block';
     document.getElementById('start-area-selection-btn').style.display = 'none';
+    document.getElementById('start-perspective-mode-btn').style.display = 'none';
+    document.getElementById('add-billboard-btn').style.display = 'none';
+
+    console.log('📐 About to call redrawWithSelection()');
+    console.log('📐 selectionRect:', selectionRect);
+    console.log('📐 canvas dimensions:', canvas.width, 'x', canvas.height);
+    console.log('📐 baseImage:', baseImage, baseImage ? 'loaded' : 'not loaded');
 
     // Redraw with selection
     redrawWithSelection();
+
+    console.log('✅ redrawWithSelection() completed');
 }
 
 // Cancel area selection
-function cancelAreaSelection() {
+window.cancelAreaSelection = function cancelAreaSelection() {
     areaSelectionMode = false;
     canvas.classList.remove('area-selection-active');
     document.getElementById('area-adjust-controls').style.display = 'none';
     document.getElementById('start-area-selection-btn').style.display = 'block';
+    document.getElementById('start-perspective-mode-btn').style.display = 'block';
+    document.getElementById('add-billboard-btn').style.display = 'block';
 
     // Redraw without selection using helper function
     redrawCanvas(true);
 }
 
 // Confirm area selection
-function confirmAreaSelection() {
+window.confirmAreaSelection = function confirmAreaSelection() {
     // Auto-select first billboard if none selected
     if (!selectedBillboard) {
         selectedBillboardIndex = 0;
@@ -976,6 +1392,8 @@ function confirmAreaSelection() {
     canvas.classList.remove('area-selection-active');
     document.getElementById('area-adjust-controls').style.display = 'none';
     document.getElementById('start-area-selection-btn').style.display = 'block';
+    document.getElementById('start-perspective-mode-btn').style.display = 'block';
+    document.getElementById('add-billboard-btn').style.display = 'block';
 
     // Show "Set as Default" button for pre-configured screenshots
     if (currentGame && currentGame.id !== 'uploaded') {
@@ -1030,7 +1448,14 @@ function confirmAreaSelection() {
 
 // Canvas mouse down
 function handleCanvasMouseDown(e) {
-    if (!areaSelectionMode) return;
+    console.log('🖱️ MOUSE DOWN on canvas');
+    console.log('areaSelectionMode:', areaSelectionMode);
+    console.log('perspectiveMode:', perspectiveMode);
+
+    if (!areaSelectionMode && !perspectiveMode) {
+        console.log('Not in edit mode, returning');
+        return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -1071,7 +1496,7 @@ function handleCanvasMouseDown(e) {
 
 // Canvas mouse move
 function handleCanvasMouseMove(e) {
-    if (!areaSelectionMode) return;
+    if (!areaSelectionMode && !perspectiveMode) return;
 
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -1160,7 +1585,8 @@ function handleCanvasMouseMove(e) {
 
 // Canvas mouse up
 function handleCanvasMouseUp(e) {
-    if (!areaSelectionMode) return;
+    console.log('🖱️ MOUSE UP on canvas');
+    if (!areaSelectionMode && !perspectiveMode) return;
 
     isDragging = false;
     isResizing = false;
@@ -1235,18 +1661,27 @@ function redrawWithSelection() {
 // ===== PERSPECTIVE MODE FUNCTIONS =====
 
 // Start perspective mode
-function startPerspectiveMode() {
+window.startPerspectiveMode = function startPerspectiveMode() {
+    console.log('startPerspectiveMode called');
+    console.log('transformTargetBillboardIndex:', transformTargetBillboardIndex);
+
     perspectiveMode = true;
     areaSelectionMode = false;
     canvas.classList.add('area-selection-active');
 
-    // Initialize perspective corners from current billboard if exists
-    if (selectedBillboard && selectedBillboard.perspective) {
+    // Use the transform target billboard
+    const targetBillboard = currentScreenshot.billboards[transformTargetBillboardIndex];
+    console.log('Target billboard:', targetBillboard);
+    selectedBillboard = targetBillboard;
+    selectedBillboardIndex = transformTargetBillboardIndex;
+
+    // Initialize perspective corners from target billboard
+    if (targetBillboard && targetBillboard.perspective) {
         perspectiveCorners = {
-            topLeft: { ...selectedBillboard.perspective.topLeft },
-            topRight: { ...selectedBillboard.perspective.topRight },
-            bottomLeft: { ...selectedBillboard.perspective.bottomLeft },
-            bottomRight: { ...selectedBillboard.perspective.bottomRight }
+            topLeft: { ...targetBillboard.perspective.topLeft },
+            topRight: { ...targetBillboard.perspective.topRight },
+            bottomLeft: { ...targetBillboard.perspective.bottomLeft },
+            bottomRight: { ...targetBillboard.perspective.bottomRight }
         };
 
         // Clamp existing corners to ensure they're within canvas bounds
@@ -1272,17 +1707,19 @@ function startPerspectiveMode() {
     document.getElementById('perspective-adjust-controls').style.display = 'block';
     document.getElementById('area-adjust-controls').style.display = 'none';
     document.querySelector('.mode-selector').style.display = 'none';
+    document.getElementById('add-billboard-btn').style.display = 'none';
 
     updatePerspectiveDisplay();
     redrawWithPerspective();
 }
 
 // Cancel perspective mode
-function cancelPerspectiveMode() {
+window.cancelPerspectiveMode = function cancelPerspectiveMode() {
     perspectiveMode = false;
     canvas.classList.remove('area-selection-active');
     document.getElementById('perspective-adjust-controls').style.display = 'none';
     document.querySelector('.mode-selector').style.display = 'flex';
+    document.getElementById('add-billboard-btn').style.display = 'block';
     draggedPerspectiveCorner = null;
 
     // Redraw using helper function
@@ -1290,7 +1727,7 @@ function cancelPerspectiveMode() {
 }
 
 // Confirm perspective mode
-function confirmPerspectiveMode() {
+window.confirmPerspectiveMode = function confirmPerspectiveMode() {
     if (!selectedBillboard) {
         selectedBillboardIndex = 0;
         selectedBillboard = currentScreenshot.billboards[0];
