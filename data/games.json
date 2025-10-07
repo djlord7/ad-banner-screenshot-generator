@@ -8,7 +8,34 @@
           "id": "game-1-ss1",
           "filename": "Age of Robots.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 643,
+              "y": 347,
+              "width": 303,
+              "height": 233,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 643,
+                  "y": 347
+                },
+                "topRight": {
+                  "x": 946,
+                  "y": 347
+                },
+                "bottomLeft": {
+                  "x": 643,
+                  "y": 580
+                },
+                "bottomRight": {
+                  "x": 946,
+                  "y": 580
+                }
+              }
+            }
+          ]
         }
       ]
     },
