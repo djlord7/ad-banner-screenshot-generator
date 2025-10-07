@@ -34,6 +34,32 @@
                   "y": 580
                 }
               }
+            },
+            {
+              "id": "billboard-1759829710494",
+              "x": 129,
+              "y": 378,
+              "width": 317,
+              "height": 185,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 129,
+                  "y": 378
+                },
+                "topRight": {
+                  "x": 446,
+                  "y": 378
+                },
+                "bottomLeft": {
+                  "x": 129,
+                  "y": 563
+                },
+                "bottomRight": {
+                  "x": 446,
+                  "y": 563
+                }
+              }
             }
           ]
         }
