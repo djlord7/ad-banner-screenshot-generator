@@ -154,19 +154,24 @@
             </section>
 
             <!-- Upload New Screenshot Section -->
-            <section class="upload-screenshot-section">
-                <h3>Or Upload New Screenshot</h3>
-                <p class="help-text">Upload an in-game screenshot and we'll auto-detect billboards</p>
-                <div class="upload-new-screenshot-area" id="upload-new-screenshot-area">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    <p>Click to upload screenshot</p>
-                    <p class="upload-hint">JPG, PNG (max 5MB)</p>
+            <section class="upload-screenshot-section" style="position: relative;">
+                <div style="filter: blur(1.5px); pointer-events: none;">
+                    <h3 style="opacity: 0.5;">Or Upload New Screenshot</h3>
+                    <p class="help-text" style="opacity: 0.5;">Upload an in-game screenshot and we'll auto-detect billboards</p>
+                    <div class="upload-new-screenshot-area" id="upload-new-screenshot-area" style="opacity: 0.3; cursor: not-allowed;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Click to upload screenshot</p>
+                        <p class="upload-hint">JPG, PNG (max 5MB)</p>
+                    </div>
                 </div>
-                <input type="file" id="new-screenshot-upload" accept="image/*" style="display: none;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(248, 250, 252, 0.85); padding: 12px 28px; border-radius: 8px; border: 1px solid rgba(203, 213, 225, 0.6); pointer-events: none; backdrop-filter: blur(4px);">
+                    <p style="font-size: 16px; font-weight: 600; color: #64748b; margin: 0; text-align: center;">🔒 Coming Soon</p>
+                </div>
+                <input type="file" id="new-screenshot-upload" accept="image/*" style="display: none;" disabled>
 
                 <div id="detection-status" style="display: none; margin-top: 15px;">
                     <p class="status-message">🔍 <span id="status-text">Processing...</span></p>
