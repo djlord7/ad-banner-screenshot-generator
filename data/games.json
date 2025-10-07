@@ -11,53 +11,53 @@
           "billboards": [
             {
               "id": "billboard-1",
-              "x": 643,
-              "y": 347,
-              "width": 303,
-              "height": 233,
+              "x": 638,
+              "y": 369,
+              "width": 316,
+              "height": 207,
               "rotation": 0,
               "perspective": {
                 "topLeft": {
-                  "x": 643,
-                  "y": 347
+                  "x": 653,
+                  "y": 369
                 },
                 "topRight": {
-                  "x": 946,
-                  "y": 347
+                  "x": 954,
+                  "y": 391
                 },
                 "bottomLeft": {
-                  "x": 643,
-                  "y": 580
+                  "x": 638,
+                  "y": 560
                 },
                 "bottomRight": {
-                  "x": 946,
-                  "y": 580
+                  "x": 924,
+                  "y": 575
                 }
               }
             },
             {
               "id": "billboard-1759829710494",
-              "x": 129,
-              "y": 378,
-              "width": 317,
-              "height": 185,
+              "x": 123,
+              "y": 376,
+              "width": 316,
+              "height": 199,
               "rotation": 0,
               "perspective": {
                 "topLeft": {
-                  "x": 129,
-                  "y": 378
+                  "x": 123,
+                  "y": 387
                 },
                 "topRight": {
-                  "x": 446,
-                  "y": 378
+                  "x": 423,
+                  "y": 376
                 },
                 "bottomLeft": {
-                  "x": 129,
-                  "y": 563
+                  "x": 160,
+                  "y": 575
                 },
                 "bottomRight": {
-                  "x": 446,
-                  "y": 563
+                  "x": 439,
+                  "y": 564
                 }
               }
             }
