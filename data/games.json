@@ -442,27 +442,31 @@
           "billboards": [
             {
               "id": "billboard-1",
-              "x": 412,
-              "y": 458,
-              "width": 495,
-              "height": 367,
+              "x": 401,
+              "y": 451,
+              "width": 515,
+              "height": 381,
               "rotation": 0,
               "perspective": {
                 "topLeft": {
-                  "x": 412,
-                  "y": 458
+                  "x": 403,
+                  "y": 451,
+                  "radius": 22
                 },
                 "topRight": {
-                  "x": 907,
-                  "y": 458
+                  "x": 915,
+                  "y": 451,
+                  "radius": 28
                 },
                 "bottomLeft": {
-                  "x": 412,
-                  "y": 826
+                  "x": 401,
+                  "y": 832,
+                  "radius": 30
                 },
                 "bottomRight": {
-                  "x": 904,
-                  "y": 823
+                  "x": 915,
+                  "y": 832,
+                  "radius": 25
                 }
               }
             }
