@@ -593,7 +593,38 @@
           "id": "game-11-ss1",
           "filename": "Light Control 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 641,
+              "y": 358,
+              "width": 317,
+              "height": 190,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 648,
+                  "y": 358,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 958,
+                  "y": 362,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 641,
+                  "y": 540,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 922,
+                  "y": 548,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-11-ss2",
