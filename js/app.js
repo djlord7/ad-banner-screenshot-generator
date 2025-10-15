@@ -169,6 +169,12 @@ function setupEventListeners() {
     if (saveTokenBtn) saveTokenBtn.addEventListener('click', saveGitHubToken);
     if (clearTokenBtn) clearTokenBtn.addEventListener('click', clearGitHubToken);
 
+    // Set as Default toggle
+    const setAsDefaultToggle = document.getElementById('set-as-default-toggle');
+    if (setAsDefaultToggle) {
+        setAsDefaultToggle.addEventListener('change', handleSetAsDefaultToggle);
+    }
+
     // Drag and drop
     uploadArea.addEventListener('dragover', handleDragOver);
     uploadArea.addEventListener('dragleave', handleDragLeave);
@@ -358,12 +364,9 @@ function loadScreenshotEditor() {
         areaSelectionControls.style.display = 'block';
     }
 
-    // Show "Set as Default" button for pre-configured screenshots
+    // Show "Set as Default" button for pre-configured screenshots (if enabled)
     if (currentGame && currentGame.id !== 'uploaded') {
-        const setDefaultContainer = document.getElementById('set-default-container');
-        if (setDefaultContainer) {
-            setDefaultContainer.style.display = 'block';
-        }
+        updateSetAsDefaultButtonVisibility();
     }
 
     // Render upload slots for all billboards
@@ -1361,6 +1364,12 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         return;
     }
 
+    // Check if feature is enabled
+    if (configData?.setAsDefaultEnabled === false) {
+        alert('⚠️ "Set as Default" is currently disabled.\n\nPlease enable it in Settings (⚙️) to save billboard configurations.');
+        return;
+    }
+
     if (!currentScreenshot || !currentScreenshot.billboards || currentScreenshot.billboards.length === 0) {
         alert('No billboards to save. Please configure at least one billboard first.');
         return;
@@ -2347,6 +2356,15 @@ async function clearGitHubToken() {
 function loadTokenStatus() {
     const encryptedToken = configData?.githubToken || '';
     const statusEl = document.getElementById('token-status');
+    const setAsDefaultToggle = document.getElementById('set-as-default-toggle');
+
+    // Load toggle state
+    if (setAsDefaultToggle) {
+        setAsDefaultToggle.checked = configData?.setAsDefaultEnabled !== false;
+    }
+
+    // Update "Set as Default" button visibility
+    updateSetAsDefaultButtonVisibility();
 
     if (encryptedToken && currentPasscode) {
         // Decrypt token for display
@@ -2372,6 +2390,53 @@ function getGitHubToken() {
         return '';
     }
     return decryptToken(encryptedToken, currentPasscode);
+}
+
+// Handle Set as Default toggle change
+async function handleSetAsDefaultToggle(e) {
+    const isEnabled = e.target.checked;
+    const token = getGitHubToken();
+
+    if (!token) {
+        alert('Please configure GitHub token first');
+        e.target.checked = !isEnabled; // Revert toggle
+        return;
+    }
+
+    try {
+        // Fetch current config.json from GitHub
+        const { sha } = await fetchConfigJsonFromGitHub(token);
+
+        // Update config with new toggle state
+        configData.setAsDefaultEnabled = isEnabled;
+
+        // Commit updated config to GitHub
+        await commitConfigJsonToGitHub(token, configData, sha);
+
+        // Update button visibility
+        updateSetAsDefaultButtonVisibility();
+
+        const statusMsg = isEnabled ? 'enabled' : 'disabled';
+        console.log(`✅ "Set as Default" ${statusMsg}`);
+    } catch (error) {
+        console.error('Error saving toggle state:', error);
+        alert(`Failed to save setting: ${error.message}`);
+        e.target.checked = !isEnabled; // Revert toggle
+    }
+}
+
+// Update visibility of "Set as Default" button based on config
+function updateSetAsDefaultButtonVisibility() {
+    const setDefaultContainer = document.getElementById('set-default-container');
+    const isEnabled = configData?.setAsDefaultEnabled !== false;
+
+    if (setDefaultContainer) {
+        if (isEnabled) {
+            setDefaultContainer.style.display = 'block';
+        } else {
+            setDefaultContainer.style.display = 'none';
+        }
+    }
 }
 
 // Fetch current config.json from GitHub

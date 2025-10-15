@@ -37,7 +37,23 @@
                     <h2>GitHub Settings</h2>
                     <span id="dev-mode-indicator" style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">🔓 DEV MODE</span>
                 </div>
-                <p>To enable auto-save to GitHub, provide your Personal Access Token:</p>
+                <p>Configure GitHub integration and "Set as Default" feature:</p>
+
+                <!-- Set as Default Toggle -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-radius: 8px; border: 2px solid #e2e8f0;">
+                        <div>
+                            <label style="margin: 0; font-weight: 600; display: block; margin-bottom: 4px;">Enable "Set as Default"</label>
+                            <p class="help-text-small" style="margin: 0; color: #64748b;">Allow saving billboard configurations to GitHub</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="set-as-default-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- GitHub Token -->
                 <div class="form-group">
                     <label for="github-token">GitHub Token:</label>
                     <input type="password" id="github-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
