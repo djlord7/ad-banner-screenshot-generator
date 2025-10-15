@@ -14,10 +14,29 @@
             <button id="settings-btn" class="btn btn-secondary" style="position: absolute; top: 20px; right: 20px;">⚙️ Settings</button>
         </header>
 
+        <!-- Passcode Modal -->
+        <div id="passcode-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>🔒 Developer Access</h2>
+                <p>Enter the 6-digit passcode to access settings:</p>
+                <div class="form-group">
+                    <input type="password" id="passcode-input" class="form-control" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="verify-passcode-btn" class="btn btn-primary">Unlock</button>
+                    <button id="cancel-passcode-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+                <p id="passcode-error" style="margin-top: 15px; font-size: 14px; color: #ef4444; display: none;"></p>
+            </div>
+        </div>
+
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal" style="display: none;">
             <div class="modal-content">
-                <h2>GitHub Settings</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2>GitHub Settings</h2>
+                    <span id="dev-mode-indicator" style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">🔓 DEV MODE</span>
+                </div>
                 <p>To enable auto-save to GitHub, provide your Personal Access Token:</p>
                 <div class="form-group">
                     <label for="github-token">GitHub Token:</label>

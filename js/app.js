@@ -6,6 +6,8 @@ let uploadedBanner = null;
 let selectedBillboard = null;
 let selectedBillboardIndex = null;
 let transformTargetBillboardIndex = 0; // For dropdown selection in transform mode
+let configData = null; // Store config data
+let isDevModeUnlocked = false; // Track if passcode has been entered
 
 // Canvas elements
 let canvas = null;
@@ -61,10 +63,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     canvas = document.getElementById('preview-canvas');
     ctx = canvas.getContext('2d');
 
+    await loadConfigData();
     await loadGamesData();
     setupEventListeners();
     setupDetectionListeners();
 });
+
+// Load config data from JSON
+async function loadConfigData() {
+    try {
+        const response = await fetch('data/config.json');
+        configData = await response.json();
+        console.log('Config data loaded successfully');
+    } catch (error) {
+        console.error('Error loading config data:', error);
+        // Create default config if not found
+        configData = {
+            passcodeHash: 'ca5ba8b8a405265c434c36aab691c7048ebf95453d9d086de43488c0bba99d69',
+            githubToken: ''
+        };
+    }
+}
 
 // Load games data from JSON
 async function loadGamesData() {
@@ -109,17 +128,40 @@ function setupEventListeners() {
         }
     });
 
-    // Settings modal
+    // Passcode and Settings modals
     const settingsBtn = document.getElementById('settings-btn');
+    const passcodeModal = document.getElementById('passcode-modal');
     const settingsModal = document.getElementById('settings-modal');
+    const passcodeInput = document.getElementById('passcode-input');
+    const verifyPasscodeBtn = document.getElementById('verify-passcode-btn');
+    const cancelPasscodeBtn = document.getElementById('cancel-passcode-btn');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const saveTokenBtn = document.getElementById('save-token-btn');
     const clearTokenBtn = document.getElementById('clear-token-btn');
+    const passcodeError = document.getElementById('passcode-error');
 
     if (settingsBtn) settingsBtn.addEventListener('click', () => {
-        settingsModal.style.display = 'flex';
-        loadTokenStatus();
+        if (isDevModeUnlocked) {
+            // Already unlocked, go straight to settings
+            settingsModal.style.display = 'flex';
+            loadTokenStatus();
+        } else {
+            // Show passcode modal
+            passcodeModal.style.display = 'flex';
+            passcodeInput.value = '';
+            passcodeError.style.display = 'none';
+            setTimeout(() => passcodeInput.focus(), 100);
+        }
     });
+
+    if (verifyPasscodeBtn) verifyPasscodeBtn.addEventListener('click', verifyPasscode);
+    if (passcodeInput) passcodeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') verifyPasscode();
+    });
+    if (cancelPasscodeBtn) cancelPasscodeBtn.addEventListener('click', () => {
+        passcodeModal.style.display = 'none';
+    });
+
     if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
         settingsModal.style.display = 'none';
     });
@@ -2129,6 +2171,51 @@ function handlePerspectiveMouseUp(e) {
     redrawWithPerspective();
 }
 
+// ===== PASSCODE VERIFICATION =====
+
+// SHA-256 hash function
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
+// Verify passcode
+async function verifyPasscode() {
+    const passcodeInput = document.getElementById('passcode-input');
+    const passcodeError = document.getElementById('passcode-error');
+    const passcodeModal = document.getElementById('passcode-modal');
+    const settingsModal = document.getElementById('settings-modal');
+
+    const enteredPasscode = passcodeInput.value.trim();
+
+    if (enteredPasscode.length !== 6) {
+        passcodeError.textContent = '❌ Please enter a 6-digit passcode';
+        passcodeError.style.display = 'block';
+        return;
+    }
+
+    // Hash the entered passcode
+    const enteredHash = await sha256(enteredPasscode);
+
+    // Compare with stored hash
+    if (enteredHash === configData.passcodeHash) {
+        // Correct passcode
+        isDevModeUnlocked = true;
+        passcodeModal.style.display = 'none';
+        settingsModal.style.display = 'flex';
+        loadTokenStatus();
+    } else {
+        // Incorrect passcode
+        passcodeError.textContent = '❌ Incorrect passcode';
+        passcodeError.style.display = 'block';
+        passcodeInput.value = '';
+        passcodeInput.focus();
+    }
+}
+
 // ===== GITHUB API FUNCTIONS =====
 
 // GitHub configuration
@@ -2136,41 +2223,92 @@ const GITHUB_OWNER = 'djlord7';
 const GITHUB_REPO = 'ad-banner-screenshot-generator';
 const GITHUB_BRANCH = 'main';
 const GAMES_JSON_PATH = 'data/games.json';
+const CONFIG_JSON_PATH = 'data/config.json';
 
-// Save GitHub token
-function saveGitHubToken() {
+// Save GitHub token to config.json on GitHub
+async function saveGitHubToken() {
     const tokenInput = document.getElementById('github-token');
     const token = tokenInput.value.trim();
-    
+    const statusEl = document.getElementById('token-status');
+
     if (!token) {
-        alert('Please enter a token');
+        statusEl.textContent = '❌ Please enter a token';
+        statusEl.style.color = '#ef4444';
         return;
     }
-    
-    localStorage.setItem('github_token', token);
-    document.getElementById('token-status').textContent = '✅ Token saved successfully!';
-    document.getElementById('token-status').style.color = '#10b981';
-    
-    setTimeout(() => {
-        document.getElementById('settings-modal').style.display = 'none';
-    }, 1500);
+
+    try {
+        statusEl.textContent = '⏳ Saving token to GitHub...';
+        statusEl.style.color = '#3b82f6';
+
+        // Fetch current config.json from GitHub
+        const { sha } = await fetchConfigJsonFromGitHub(token);
+
+        // Update config with new token
+        configData.githubToken = token;
+
+        // Commit updated config to GitHub
+        await commitConfigJsonToGitHub(token, configData, sha);
+
+        statusEl.textContent = '✅ Token saved successfully to GitHub!';
+        statusEl.style.color = '#10b981';
+
+        setTimeout(() => {
+            document.getElementById('settings-modal').style.display = 'none';
+        }, 1500);
+    } catch (error) {
+        console.error('Error saving token:', error);
+        statusEl.textContent = `❌ Failed to save: ${error.message}`;
+        statusEl.style.color = '#ef4444';
+    }
 }
 
 // Clear GitHub token
-function clearGitHubToken() {
-    localStorage.removeItem('github_token');
-    document.getElementById('github-token').value = '';
-    document.getElementById('token-status').textContent = 'Token cleared';
-    document.getElementById('token-status').style.color = '#ef4444';
+async function clearGitHubToken() {
+    const statusEl = document.getElementById('token-status');
+
+    if (!confirm('Are you sure you want to clear the GitHub token?')) {
+        return;
+    }
+
+    try {
+        statusEl.textContent = '⏳ Clearing token from GitHub...';
+        statusEl.style.color = '#3b82f6';
+
+        // Use existing token to fetch and update config
+        const currentToken = configData.githubToken;
+        if (!currentToken) {
+            statusEl.textContent = '❌ No token to clear';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+
+        // Fetch current config.json from GitHub
+        const { sha } = await fetchConfigJsonFromGitHub(currentToken);
+
+        // Update config with empty token
+        configData.githubToken = '';
+
+        // Commit updated config to GitHub
+        await commitConfigJsonToGitHub(currentToken, configData, sha);
+
+        document.getElementById('github-token').value = '';
+        statusEl.textContent = '✅ Token cleared from GitHub';
+        statusEl.style.color = '#10b981';
+    } catch (error) {
+        console.error('Error clearing token:', error);
+        statusEl.textContent = `❌ Failed to clear: ${error.message}`;
+        statusEl.style.color = '#ef4444';
+    }
 }
 
 // Load token status
 function loadTokenStatus() {
-    const token = localStorage.getItem('github_token');
+    const token = configData?.githubToken || '';
     const statusEl = document.getElementById('token-status');
-    
+
     if (token) {
-        statusEl.textContent = '✓ Token is configured';
+        statusEl.textContent = '✓ Token is configured (from GitHub)';
         statusEl.style.color = '#10b981';
         document.getElementById('github-token').value = token;
     } else {
@@ -2181,27 +2319,80 @@ function loadTokenStatus() {
 
 // Get GitHub token
 function getGitHubToken() {
-    return localStorage.getItem('github_token');
+    return configData?.githubToken || '';
 }
 
-// Fetch current games.json from GitHub
-async function fetchGamesJsonFromGitHub(token) {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GAMES_JSON_PATH}?ref=${GITHUB_BRANCH}`;
-    
+// Fetch current config.json from GitHub
+async function fetchConfigJsonFromGitHub(token) {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${CONFIG_JSON_PATH}?ref=${GITHUB_BRANCH}`;
+
     const response = await fetch(url, {
         headers: {
             'Authorization': `token ${token}`,
             'Accept': 'application/vnd.github.v3+json'
         }
     });
-    
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch config.json: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = atob(data.content); // Decode base64
+
+    return {
+        content: JSON.parse(content),
+        sha: data.sha // Need SHA for updating
+    };
+}
+
+// Commit updated config.json to GitHub
+async function commitConfigJsonToGitHub(token, configData, sha) {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${CONFIG_JSON_PATH}`;
+
+    const content = btoa(JSON.stringify(configData, null, 2)); // Encode to base64
+
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            message: 'Update GitHub token configuration',
+            content: content,
+            sha: sha,
+            branch: GITHUB_BRANCH
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Failed to commit: ${error.message}`);
+    }
+
+    return await response.json();
+}
+
+// Fetch current games.json from GitHub
+async function fetchGamesJsonFromGitHub(token) {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GAMES_JSON_PATH}?ref=${GITHUB_BRANCH}`;
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+
     if (!response.ok) {
         throw new Error(`Failed to fetch games.json: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
     const content = atob(data.content); // Decode base64
-    
+
     return {
         content: JSON.parse(content),
         sha: data.sha // Need SHA for updating

@@ -601,7 +601,7 @@ footer {
 }
 
 .modal-content {
-    background: var(--bg-card);
+    background: white;
     padding: 30px;
     border-radius: 12px;
     max-width: 500px;
@@ -611,12 +611,31 @@ footer {
 
 .modal-content h2 {
     margin-top: 0;
+    margin-bottom: 15px;
     color: var(--text-primary);
 }
 
 .modal-content .form-control {
     width: 100%;
     box-sizing: border-box;
+}
+
+/* Passcode Modal Specific Styling */
+#passcode-modal .modal-content {
+    max-width: 400px;
+}
+
+#passcode-input {
+    text-align: center;
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
+    font-weight: 600;
+    padding: 15px;
+}
+
+#passcode-error {
+    text-align: center;
+    font-weight: 500;
 }
 
 .help-text-small {
