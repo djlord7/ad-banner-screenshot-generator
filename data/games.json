@@ -341,7 +341,60 @@
           "id": "game-5-ss1",
           "filename": "Cooking Diary 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1171,
+              "y": 102,
+              "width": 306,
+              "height": 231,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1171,
+                  "y": 102
+                },
+                "topRight": {
+                  "x": 1477,
+                  "y": 102
+                },
+                "bottomLeft": {
+                  "x": 1171,
+                  "y": 333
+                },
+                "bottomRight": {
+                  "x": 1477,
+                  "y": 330
+                }
+              }
+            },
+            {
+              "id": "billboard-1760513279675",
+              "x": 559,
+              "y": 650,
+              "width": 228,
+              "height": 309,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 559,
+                  "y": 650
+                },
+                "topRight": {
+                  "x": 787,
+                  "y": 653
+                },
+                "bottomLeft": {
+                  "x": 559,
+                  "y": 959
+                },
+                "bottomRight": {
+                  "x": 787,
+                  "y": 959
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-5-ss2",
