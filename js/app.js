@@ -1908,6 +1908,7 @@ window.confirmPerspectiveMode = function confirmPerspectiveMode() {
     canvas.classList.remove('area-selection-active');
     document.getElementById('perspective-adjust-controls').style.display = 'none';
     document.querySelector('.mode-selector').style.display = 'flex';
+    document.getElementById('add-billboard-btn').style.display = 'block'; // Show "Add Billboard" button
     draggedPerspectiveCorner = null;
 
     // Show "Set as Default" button for pre-configured screenshots
