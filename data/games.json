@@ -91,7 +91,34 @@
           "id": "game-3-ss1",
           "filename": "Baseball Clash.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 701,
+              "y": 186,
+              "width": 300,
+              "height": 600,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 701,
+                  "y": 186
+                },
+                "topRight": {
+                  "x": 1001,
+                  "y": 186
+                },
+                "bottomLeft": {
+                  "x": 701,
+                  "y": 786
+                },
+                "bottomRight": {
+                  "x": 1001,
+                  "y": 786
+                }
+              }
+            }
+          ]
         }
       ]
     },
