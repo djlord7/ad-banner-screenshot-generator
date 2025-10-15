@@ -1472,7 +1472,10 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         setDefaultBtn.textContent = originalText;
         setDefaultBtn.disabled = false;
 
-        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nReload the page to see the updated configuration.`);
+        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nWe'll check when the update is live on GitHub and prompt you to reload.`);
+
+        // Poll GitHub to check when the update is live
+        pollForGitHubUpdate(currentGame.id, currentScreenshot.id, currentScreenshot.billboards.length);
 
     } catch (error) {
         console.error('❌ Error saving to GitHub:', error);
@@ -1484,6 +1487,92 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
 
         alert(`❌ Failed to save to GitHub:\n\n${error.message}\n\nPlease check:\n1. Your GitHub token has 'repo' permissions\n2. You have access to the repository\n3. Your internet connection is working`);
     }
+}
+
+// Poll GitHub to check when the update is live
+async function pollForGitHubUpdate(gameId, screenshotId, expectedBillboardCount) {
+    console.log('🔄 Starting to poll GitHub for update...');
+
+    const maxAttempts = 30; // Try for ~30 seconds
+    const pollInterval = 1000; // Check every 1 second
+    let attempts = 0;
+
+    const checkUpdate = async () => {
+        attempts++;
+        console.log(`📡 Poll attempt ${attempts}/${maxAttempts}...`);
+
+        try {
+            // Fetch the public games.json with cache-busting
+            const timestamp = new Date().getTime();
+            const response = await fetch(`data/games.json?t=${timestamp}`, {
+                cache: 'no-store'
+            });
+
+            const liveData = await response.json();
+
+            // Find the game and screenshot
+            const game = liveData.games.find(g => g.id === gameId);
+            if (!game) {
+                console.warn('Game not found in live data');
+                return false;
+            }
+
+            const screenshot = game.screenshots.find(s => s.id === screenshotId);
+            if (!screenshot) {
+                console.warn('Screenshot not found in live data');
+                return false;
+            }
+
+            // Check if billboard count matches (indicates update is live)
+            const liveBillboardCount = screenshot.billboards?.length || 0;
+            console.log(`Live billboard count: ${liveBillboardCount}, Expected: ${expectedBillboardCount}`);
+
+            if (liveBillboardCount === expectedBillboardCount) {
+                console.log('✅ Update confirmed live on GitHub!');
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Error polling GitHub:', error);
+            return false;
+        }
+    };
+
+    // Poll loop
+    const poll = async () => {
+        const isLive = await checkUpdate();
+
+        if (isLive) {
+            // Update is live! Prompt user to reload
+            const shouldReload = confirm(
+                '✅ Your changes are now live on GitHub!\n\n' +
+                'Click OK to reload the page and see the updated billboard configuration.\n\n' +
+                'Click Cancel to continue working (you can reload manually later).'
+            );
+
+            if (shouldReload) {
+                location.reload();
+            }
+            return;
+        }
+
+        if (attempts < maxAttempts) {
+            // Try again
+            setTimeout(poll, pollInterval);
+        } else {
+            // Timeout - inform user
+            console.log('⏱️ Polling timeout reached');
+            alert(
+                '⏱️ Update is taking longer than expected.\n\n' +
+                'Your changes have been saved to GitHub, but the CDN might need more time to update.\n\n' +
+                'Please reload the page manually in a few moments to see the changes.'
+            );
+        }
+    };
+
+    // Start polling
+    poll();
 }
 
 // ===== AREA SELECTION FUNCTIONS =====
