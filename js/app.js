@@ -46,6 +46,11 @@ let draggedRadiusAnchor = null; // Which corner's radius is being dragged
 let isDraggingQuadrilateral = false;
 let quadDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
 
+// Edge dragging (drag edge to transform)
+let isDraggingEdge = false;
+let draggedEdge = null;
+let edgeDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
+
 // Auto-detection
 let openCvReady = false;
 let detectedRectangles = [];
@@ -2246,6 +2251,9 @@ window.cancelPerspectiveMode = function cancelPerspectiveMode() {
     draggedRadiusAnchor = null;
     isDraggingQuadrilateral = false;
     quadDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
+    isDraggingEdge = false;
+    draggedEdge = null;
+    edgeDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
 
     // Redraw using helper function
     redrawCanvas(true);
@@ -2620,6 +2628,58 @@ function isPointInQuadrilateral(x, y, corners) {
     return inside;
 }
 
+// Helper function to get distance from point to line segment
+function distanceToLineSegment(px, py, x1, y1, x2, y2) {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+
+    if (lenSq !== 0) {
+        param = dot / lenSq;
+    }
+
+    let xx, yy;
+
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+
+    const dx = px - xx;
+    const dy = py - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Helper function to check if cursor is near an edge
+function getEdgeNearCursor(x, y, corners, threshold = 10) {
+    const edges = [
+        { name: 'top', x1: corners.topLeft.x, y1: corners.topLeft.y, x2: corners.topRight.x, y2: corners.topRight.y },
+        { name: 'right', x1: corners.topRight.x, y1: corners.topRight.y, x2: corners.bottomRight.x, y2: corners.bottomRight.y },
+        { name: 'bottom', x1: corners.bottomRight.x, y1: corners.bottomRight.y, x2: corners.bottomLeft.x, y2: corners.bottomLeft.y },
+        { name: 'left', x1: corners.bottomLeft.x, y1: corners.bottomLeft.y, x2: corners.topLeft.x, y2: corners.topLeft.y }
+    ];
+
+    for (const edge of edges) {
+        const dist = distanceToLineSegment(x, y, edge.x1, edge.y1, edge.x2, edge.y2);
+        if (dist <= threshold) {
+            return edge.name;
+        }
+    }
+
+    return null;
+}
+
 // Update mouse handlers to support perspective mode
 const originalMouseDown = handleCanvasMouseDown;
 const originalMouseMove = handleCanvasMouseMove;
@@ -2702,6 +2762,24 @@ function handlePerspectiveMouseDown(e) {
         }
     }
 
+    // Check if clicking on an edge (drag edge to transform)
+    const edgeNear = getEdgeNearCursor(x, y, perspectiveCorners, 10);
+    if (edgeNear) {
+        isDraggingEdge = true;
+        draggedEdge = edgeNear;
+        edgeDragStartPos = {
+            mouseX: x,
+            mouseY: y,
+            corners: {
+                topLeft: { ...perspectiveCorners.topLeft },
+                topRight: { ...perspectiveCorners.topRight },
+                bottomLeft: { ...perspectiveCorners.bottomLeft },
+                bottomRight: { ...perspectiveCorners.bottomRight }
+            }
+        };
+        return;
+    }
+
     // Finally, check if clicking inside the quadrilateral (drag to reposition)
     if (isPointInQuadrilateral(x, y, perspectiveCorners)) {
         isDraggingQuadrilateral = true;
@@ -2745,6 +2823,84 @@ function handlePerspectiveMouseMove(e) {
         const radius = Math.min(maxRadius, Math.max(0, distanceFromCorner - 10)); // -10 to account for anchor offset
 
         corner.radius = radius;
+
+        // Use requestAnimationFrame for smooth redraws
+        if (!perspectiveRedrawScheduled) {
+            perspectiveRedrawScheduled = true;
+            requestAnimationFrame(() => {
+                redrawWithPerspective();
+                perspectiveRedrawScheduled = false;
+            });
+        }
+        return;
+    }
+
+    // Handle edge dragging (drag edge to transform)
+    if (isDraggingEdge && draggedEdge) {
+        const deltaX = x - edgeDragStartPos.mouseX;
+        const deltaY = y - edgeDragStartPos.mouseY;
+
+        const margin = 10;
+        let newCorners = { ...perspectiveCorners };
+
+        // Move the two corners that define the edge
+        if (draggedEdge === 'top') {
+            newCorners.topLeft = {
+                x: edgeDragStartPos.corners.topLeft.x + deltaX,
+                y: edgeDragStartPos.corners.topLeft.y + deltaY,
+                radius: edgeDragStartPos.corners.topLeft.radius
+            };
+            newCorners.topRight = {
+                x: edgeDragStartPos.corners.topRight.x + deltaX,
+                y: edgeDragStartPos.corners.topRight.y + deltaY,
+                radius: edgeDragStartPos.corners.topRight.radius
+            };
+        } else if (draggedEdge === 'right') {
+            newCorners.topRight = {
+                x: edgeDragStartPos.corners.topRight.x + deltaX,
+                y: edgeDragStartPos.corners.topRight.y + deltaY,
+                radius: edgeDragStartPos.corners.topRight.radius
+            };
+            newCorners.bottomRight = {
+                x: edgeDragStartPos.corners.bottomRight.x + deltaX,
+                y: edgeDragStartPos.corners.bottomRight.y + deltaY,
+                radius: edgeDragStartPos.corners.bottomRight.radius
+            };
+        } else if (draggedEdge === 'bottom') {
+            newCorners.bottomRight = {
+                x: edgeDragStartPos.corners.bottomRight.x + deltaX,
+                y: edgeDragStartPos.corners.bottomRight.y + deltaY,
+                radius: edgeDragStartPos.corners.bottomRight.radius
+            };
+            newCorners.bottomLeft = {
+                x: edgeDragStartPos.corners.bottomLeft.x + deltaX,
+                y: edgeDragStartPos.corners.bottomLeft.y + deltaY,
+                radius: edgeDragStartPos.corners.bottomLeft.radius
+            };
+        } else if (draggedEdge === 'left') {
+            newCorners.bottomLeft = {
+                x: edgeDragStartPos.corners.bottomLeft.x + deltaX,
+                y: edgeDragStartPos.corners.bottomLeft.y + deltaY,
+                radius: edgeDragStartPos.corners.bottomLeft.radius
+            };
+            newCorners.topLeft = {
+                x: edgeDragStartPos.corners.topLeft.x + deltaX,
+                y: edgeDragStartPos.corners.topLeft.y + deltaY,
+                radius: edgeDragStartPos.corners.topLeft.radius
+            };
+        }
+
+        // Check if all corners are within canvas bounds
+        const allWithinBounds = Object.values(newCorners).every(corner =>
+            corner.x >= margin && corner.x <= canvas.width - margin &&
+            corner.y >= margin && corner.y <= canvas.height - margin
+        );
+
+        if (allWithinBounds) {
+            perspectiveCorners = newCorners;
+        }
+
+        updatePerspectiveDisplay();
 
         // Use requestAnimationFrame for smooth redraws
         if (!perspectiveRedrawScheduled) {
@@ -2811,7 +2967,7 @@ function handlePerspectiveMouseMove(e) {
     }
 
     // Update cursor
-    if (!draggedPerspectiveCorner && !draggedRadiusAnchor && !isDraggingQuadrilateral) {
+    if (!draggedPerspectiveCorner && !draggedRadiusAnchor && !isDraggingQuadrilateral && !isDraggingEdge) {
         const clickRadius = 15;
         let overCorner = false;
         const radiusAnchorOffset = 25;
@@ -2859,6 +3015,20 @@ function handlePerspectiveMouseMove(e) {
             }
         }
 
+        // Check if over an edge
+        if (!overCorner) {
+            const edgeNear = getEdgeNearCursor(x, y, perspectiveCorners, 10);
+            if (edgeNear) {
+                // Set appropriate cursor for edge direction
+                if (edgeNear === 'top' || edgeNear === 'bottom') {
+                    canvas.style.cursor = 'ns-resize';
+                } else {
+                    canvas.style.cursor = 'ew-resize';
+                }
+                overCorner = true;
+            }
+        }
+
         // Check if inside quadrilateral
         if (!overCorner && isPointInQuadrilateral(x, y, perspectiveCorners)) {
             canvas.style.cursor = 'move';
@@ -2895,6 +3065,9 @@ function handlePerspectiveMouseUp(e) {
     draggedRadiusAnchor = null;
     isDraggingQuadrilateral = false;
     quadDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
+    isDraggingEdge = false;
+    draggedEdge = null;
+    edgeDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
     // Redraw without magnifier
     redrawWithPerspective();
 }
