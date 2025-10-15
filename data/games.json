@@ -1140,7 +1140,38 @@
           "id": "game-13-ss1",
           "filename": "Moto Rider.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1276,
+              "y": 110,
+              "width": 66,
+              "height": 26,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1276,
+                  "y": 110,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1342,
+                  "y": 110,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1276,
+                  "y": 136,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1342,
+                  "y": 136,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
