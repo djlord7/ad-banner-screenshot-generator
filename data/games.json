@@ -480,26 +480,30 @@
             {
               "id": "billboard-1",
               "x": 911,
-              "y": 199,
-              "width": 338,
-              "height": 212,
+              "y": 208,
+              "width": 331,
+              "height": 195,
               "rotation": 0,
               "perspective": {
                 "topLeft": {
                   "x": 911,
-                  "y": 199
+                  "y": 208,
+                  "radius": 22
                 },
                 "topRight": {
-                  "x": 1249,
-                  "y": 199
+                  "x": 1242,
+                  "y": 210,
+                  "radius": 18
                 },
                 "bottomLeft": {
-                  "x": 911,
-                  "y": 408
+                  "x": 913,
+                  "y": 403,
+                  "radius": 15
                 },
                 "bottomRight": {
-                  "x": 1249,
-                  "y": 411
+                  "x": 1242,
+                  "y": 403,
+                  "radius": 17
                 }
               }
             }
@@ -515,19 +519,112 @@
           "id": "game-7-ss1",
           "filename": "EMHQ(2).jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1102,
+              "y": 126,
+              "width": 251,
+              "height": 113,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1102,
+                  "y": 126,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1353,
+                  "y": 168,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1108,
+                  "y": 194,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1350,
+                  "y": 239,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-7-ss2",
           "filename": "EMHQ(3).jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1393,
+              "y": 14,
+              "width": 477,
+              "height": 485,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1408,
+                  "y": 14,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1870,
+                  "y": 320,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1393,
+                  "y": 167,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1785,
+                  "y": 499,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-7-ss3",
           "filename": "EMHQ.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 2136,
+              "y": 262,
+              "width": 229,
+              "height": 153,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 2160,
+                  "y": 262,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 2366,
+                  "y": 373,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 2136,
+                  "y": 307,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 2334,
+                  "y": 415,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -539,19 +636,112 @@
           "id": "game-8-ss1",
           "filename": "Fork N Sausage 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 775,
+              "y": 288,
+              "width": 313,
+              "height": 254,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 775,
+                  "y": 288,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1089,
+                  "y": 296,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 775,
+                  "y": 534,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1089,
+                  "y": 542,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-8-ss2",
           "filename": "Fork N Sausage 3.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 692,
+              "y": 1706,
+              "width": 301,
+              "height": 309,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 692,
+                  "y": 1706,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 994,
+                  "y": 1718,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 692,
+                  "y": 2000,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 994,
+                  "y": 2016,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-8-ss3",
           "filename": "Fork N Sausage.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 81,
+              "y": 1686,
+              "width": 329,
+              "height": 274,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 81,
+                  "y": 1702,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 411,
+                  "y": 1686,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 81,
+                  "y": 1960,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 411,
+                  "y": 1948,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -563,7 +753,68 @@
           "id": "game-9-ss1",
           "filename": "Fury Cars.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 117,
+              "y": 453,
+              "width": 353,
+              "height": 297,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 117,
+                  "y": 453,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 462,
+                  "y": 453,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 145,
+                  "y": 750,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 470,
+                  "y": 750,
+                  "radius": 0
+                }
+              }
+            },
+            {
+              "id": "billboard-1760523784429",
+              "x": 478,
+              "y": 452,
+              "width": 551,
+              "height": 297,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 478,
+                  "y": 452,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1029,
+                  "y": 452,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 486,
+                  "y": 750,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1001,
+                  "y": 746,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -575,13 +826,75 @@
           "id": "game-10-ss1",
           "filename": "Lazy Jump 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 81,
+              "y": 929,
+              "width": 385,
+              "height": 210,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 81,
+                  "y": 929,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 466,
+                  "y": 929,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 85,
+                  "y": 1139,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 466,
+                  "y": 1139,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-10-ss2",
           "filename": "Lazy Jump.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 54,
+              "y": 1968,
+              "width": 317,
+              "height": 167,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 54,
+                  "y": 1968,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 371,
+                  "y": 1968,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 58,
+                  "y": 2135,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 371,
+                  "y": 2135,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -630,13 +943,75 @@
           "id": "game-11-ss2",
           "filename": "Light Control 3.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 522,
+              "y": 750,
+              "width": 373,
+              "height": 182,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 522,
+                  "y": 750,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 894,
+                  "y": 754,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 530,
+                  "y": 929,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 859,
+                  "y": 933,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-11-ss3",
           "filename": "Light Control.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 81,
+              "y": 621,
+              "width": 424,
+              "height": 305,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 81,
+                  "y": 721,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 494,
+                  "y": 621,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 149,
+                  "y": 927,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 506,
+                  "y": 824,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -648,19 +1023,112 @@
           "id": "game-12-ss1",
           "filename": "Magic Finger 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 299,
+              "y": 925,
+              "width": 242,
+              "height": 139,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 299,
+                  "y": 925,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 537,
+                  "y": 929,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 303,
+                  "y": 1064,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 541,
+                  "y": 1064,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-12-ss2",
           "filename": "Magic Finger 3.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 720,
+              "y": 596,
+              "width": 385,
+              "height": 111,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 724,
+                  "y": 596,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1105,
+                  "y": 600,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 720,
+                  "y": 703,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1097,
+                  "y": 707,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-12-ss3",
           "filename": "Magic Finger.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 641,
+              "y": 861,
+              "width": 178,
+              "height": 361,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 645,
+                  "y": 869,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 819,
+                  "y": 861,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 641,
+                  "y": 1218,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 811,
+                  "y": 1222,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
