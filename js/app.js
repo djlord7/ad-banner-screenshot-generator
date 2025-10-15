@@ -1596,13 +1596,8 @@ async function pollForGitHubUpdate(token, commitSha, gameId, screenshotId, expec
             // Try again
             setTimeout(poll, pollInterval);
         } else {
-            // Timeout - inform user
-            console.log('⏱️ Deployment tracking timeout reached');
-            alert(
-                '⏱️ Deployment is taking longer than expected.\n\n' +
-                'Your changes have been saved to GitHub and should be live soon.\n\n' +
-                'Please reload the page manually in a few moments to see the changes.'
-            );
+            // Timeout - just log, no user prompt
+            console.log('⏱️ Deployment tracking timeout reached. Changes saved to GitHub.');
         }
     };
 
