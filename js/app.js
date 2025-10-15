@@ -77,7 +77,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Load config data from JSON
 async function loadConfigData() {
     try {
-        const response = await fetch('data/config.json');
+        // Add cache-busting timestamp to prevent browser caching
+        const timestamp = new Date().getTime();
+        const response = await fetch(`data/config.json?t=${timestamp}`, {
+            cache: 'no-store' // Disable browser cache
+        });
         configData = await response.json();
         console.log('Config data loaded successfully');
 
@@ -108,7 +112,11 @@ async function loadConfigData() {
 // Load games data from JSON
 async function loadGamesData() {
     try {
-        const response = await fetch('data/games.json');
+        // Add cache-busting timestamp to prevent browser caching
+        const timestamp = new Date().getTime();
+        const response = await fetch(`data/games.json?t=${timestamp}`, {
+            cache: 'no-store' // Disable browser cache
+        });
         gamesData = await response.json();
         populateGameDropdown();
     } catch (error) {
@@ -1464,7 +1472,13 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         setDefaultBtn.textContent = originalText;
         setDefaultBtn.disabled = false;
 
-        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.`);
+        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nPage will reload to show the latest version.`);
+
+        // Reload the page to fetch the latest games.json from GitHub
+        // This ensures the user sees the updated billboard configuration
+        setTimeout(() => {
+            location.reload();
+        }, 500);
 
     } catch (error) {
         console.error('❌ Error saving to GitHub:', error);
