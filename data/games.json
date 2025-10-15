@@ -236,7 +236,34 @@
           "id": "game-4-ss1",
           "filename": "Boom Karts 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1174,
+              "y": 15,
+              "width": 415,
+              "height": 214,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1174,
+                  "y": 15
+                },
+                "topRight": {
+                  "x": 1589,
+                  "y": 37
+                },
+                "bottomLeft": {
+                  "x": 1177,
+                  "y": 223
+                },
+                "bottomRight": {
+                  "x": 1580,
+                  "y": 229
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-4-ss2",
