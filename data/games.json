@@ -1152,13 +1152,75 @@
           "id": "game-14-ss1",
           "filename": "Motor Bike xtreme races(2).jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1263,
+              "y": 258,
+              "width": 185,
+              "height": 98,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1263,
+                  "y": 258,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1448,
+                  "y": 260,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1263,
+                  "y": 353,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1443,
+                  "y": 355,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-14-ss2",
           "filename": "Motor Bike xtreme races.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1160,
+              "y": 282,
+              "width": 132,
+              "height": 66,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1160,
+                  "y": 282,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1292,
+                  "y": 282,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1160,
+                  "y": 347,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1292,
+                  "y": 345,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -1170,13 +1232,75 @@
           "id": "game-15-ss1",
           "filename": "Motor Tour(2).jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1406,
+              "y": 332,
+              "width": 214,
+              "height": 227,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1411,
+                  "y": 358,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1619,
+                  "y": 332,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1406,
+                  "y": 553,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1611,
+                  "y": 558,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-15-ss2",
           "filename": "Motor Tour.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 680,
+              "y": 213,
+              "width": 142,
+              "height": 71,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 680,
+                  "y": 213,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 823,
+                  "y": 216,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 680,
+                  "y": 282,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 823,
+                  "y": 284,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -1188,13 +1312,75 @@
           "id": "game-16-ss1",
           "filename": "Motorcycle Real Simulator 2.PNG",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1366,
+              "y": 187,
+              "width": 284,
+              "height": 239,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1369,
+                  "y": 187,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1650,
+                  "y": 187,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 1366,
+                  "y": 424,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1644,
+                  "y": 426,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-16-ss2",
           "filename": "Motorcycle Real Simulator.PNG",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 966,
+              "y": 165,
+              "width": 225,
+              "height": 195,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 966,
+                  "y": 165,
+                  "radius": 0
+                },
+                "topRight": {
+                  "x": 1188,
+                  "y": 176,
+                  "radius": 0
+                },
+                "bottomLeft": {
+                  "x": 974,
+                  "y": 360,
+                  "radius": 0
+                },
+                "bottomRight": {
+                  "x": 1191,
+                  "y": 360,
+                  "radius": 0
+                }
+              }
+            }
+          ]
         }
       ]
     },
