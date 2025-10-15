@@ -1461,9 +1461,10 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         console.log('📤 Committing to GitHub...');
 
         // Commit the updated games.json to GitHub
-        await commitGamesJsonToGitHub(token, githubGamesData, sha);
+        const commitResponse = await commitGamesJsonToGitHub(token, githubGamesData, sha);
+        const commitSha = commitResponse.commit.sha;
 
-        console.log('✅ Successfully committed to GitHub');
+        console.log('✅ Successfully committed to GitHub with SHA:', commitSha);
 
         // Update local gamesData to reflect changes
         gamesData = githubGamesData;
@@ -1472,10 +1473,10 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         setDefaultBtn.textContent = originalText;
         setDefaultBtn.disabled = false;
 
-        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nWe'll check when the update is live on GitHub and prompt you to reload.`);
+        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nWe're tracking the deployment status and will prompt you when it's live.`);
 
-        // Poll GitHub to check when the update is live
-        pollForGitHubUpdate(currentGame.id, currentScreenshot.id, currentScreenshot.billboards.length);
+        // Poll GitHub Pages deployment status
+        pollForGitHubUpdate(token, commitSha, currentGame.id, currentScreenshot.id, currentScreenshot.billboards.length);
 
     } catch (error) {
         console.error('❌ Error saving to GitHub:', error);
@@ -1489,20 +1490,54 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
     }
 }
 
-// Poll GitHub to check when the update is live
-async function pollForGitHubUpdate(gameId, screenshotId, expectedBillboardCount) {
-    console.log('🔄 Starting to poll GitHub for update...');
+// Poll GitHub Pages deployment status to check when the update is live
+async function pollForGitHubUpdate(token, commitSha, gameId, screenshotId, expectedBillboardCount) {
+    console.log('🔄 Starting to track GitHub Pages deployment for commit:', commitSha);
 
-    const maxAttempts = 30; // Try for ~30 seconds
-    const pollInterval = 1000; // Check every 1 second
+    const maxAttempts = 60; // Try for ~120 seconds (60 attempts × 2s)
+    const pollInterval = 2000; // Check every 2 seconds
     let attempts = 0;
 
-    const checkUpdate = async () => {
+    const checkDeploymentStatus = async () => {
         attempts++;
-        console.log(`📡 Poll attempt ${attempts}/${maxAttempts}...`);
+        console.log(`📡 Deployment check ${attempts}/${maxAttempts}...`);
 
         try {
-            // Fetch the public games.json with cache-busting
+            // Check GitHub Pages Builds API
+            const buildsUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pages/builds/latest`;
+            const response = await fetch(buildsUrl, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!response.ok) {
+                console.warn('Failed to fetch GitHub Pages build status, falling back to file polling');
+                return await checkUpdateViaFilePolling(gameId, screenshotId, expectedBillboardCount);
+            }
+
+            const buildData = await response.json();
+            console.log('Build status:', buildData.status);
+
+            // Check if deployment is complete and matches our commit
+            if (buildData.status === 'built' && buildData.commit === commitSha) {
+                console.log('✅ Deployment confirmed live on GitHub Pages!');
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Error checking deployment status, falling back to file polling:', error);
+            return await checkUpdateViaFilePolling(gameId, screenshotId, expectedBillboardCount);
+        }
+    };
+
+    // Fallback: Check by fetching the actual file
+    const checkUpdateViaFilePolling = async (gameId, screenshotId, expectedBillboardCount) => {
+        console.log('📄 Falling back to file polling method...');
+
+        try {
             const timestamp = new Date().getTime();
             const response = await fetch(`data/games.json?t=${timestamp}`, {
                 cache: 'no-store'
@@ -1528,25 +1563,25 @@ async function pollForGitHubUpdate(gameId, screenshotId, expectedBillboardCount)
             console.log(`Live billboard count: ${liveBillboardCount}, Expected: ${expectedBillboardCount}`);
 
             if (liveBillboardCount === expectedBillboardCount) {
-                console.log('✅ Update confirmed live on GitHub!');
+                console.log('✅ Update confirmed live via file polling!');
                 return true;
             }
 
             return false;
         } catch (error) {
-            console.error('Error polling GitHub:', error);
+            console.error('Error in file polling:', error);
             return false;
         }
     };
 
     // Poll loop
     const poll = async () => {
-        const isLive = await checkUpdate();
+        const isLive = await checkDeploymentStatus();
 
         if (isLive) {
-            // Update is live! Prompt user to reload
+            // Deployment is live! Prompt user to reload
             const shouldReload = confirm(
-                '✅ Your changes are now live on GitHub!\n\n' +
+                '✅ Your changes are now live on GitHub Pages!\n\n' +
                 'Click OK to reload the page and see the updated billboard configuration.\n\n' +
                 'Click Cancel to continue working (you can reload manually later).'
             );
@@ -1562,10 +1597,10 @@ async function pollForGitHubUpdate(gameId, screenshotId, expectedBillboardCount)
             setTimeout(poll, pollInterval);
         } else {
             // Timeout - inform user
-            console.log('⏱️ Polling timeout reached');
+            console.log('⏱️ Deployment tracking timeout reached');
             alert(
-                '⏱️ Update is taking longer than expected.\n\n' +
-                'Your changes have been saved to GitHub, but the CDN might need more time to update.\n\n' +
+                '⏱️ Deployment is taking longer than expected.\n\n' +
+                'Your changes have been saved to GitHub and should be live soon.\n\n' +
                 'Please reload the page manually in a few moments to see the changes.'
             );
         }
