@@ -1782,20 +1782,20 @@
           "billboards": [
             {
               "id": "billboard-1",
-              "x": 489,
-              "y": 334,
-              "width": 235,
-              "height": 370,
+              "x": 485,
+              "y": 331,
+              "width": 242,
+              "height": 373,
               "rotation": 0,
               "perspective": {
                 "topLeft": {
-                  "x": 489,
-                  "y": 334,
+                  "x": 485,
+                  "y": 331,
                   "radius": 0
                 },
                 "topRight": {
-                  "x": 723,
-                  "y": 334,
+                  "x": 727,
+                  "y": 331,
                   "radius": 0
                 },
                 "bottomLeft": {
