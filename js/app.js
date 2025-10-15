@@ -26,13 +26,17 @@ let resizeHandle = null;
 let activeCorner = null;
 let draggedPerspectiveCorner = null;
 
-// Perspective corners
+// Perspective corners (with sub-pixel precision)
 let perspectiveCorners = {
     topLeft: { x: 0, y: 0 },
     topRight: { x: 0, y: 0 },
     bottomLeft: { x: 0, y: 0 },
     bottomRight: { x: 0, y: 0 }
 };
+
+// Perspective precision tracking
+let perspectiveRedrawScheduled = false; // For requestAnimationFrame
+let lastPerspectiveMousePos = { x: 0, y: 0 }; // Track raw mouse position
 
 // Auto-detection
 let openCvReady = false;
@@ -2021,8 +2025,8 @@ function redrawWithPerspective() {
     // Draw magnifying glass effect if dragging a corner
     if (draggedPerspectiveCorner) {
         const draggedCorner = perspectiveCorners[draggedPerspectiveCorner];
-        const magRadius = 80; // Magnifying glass circle radius
-        const magZoom = 3; // Zoom level
+        const magRadius = 100; // Magnifying glass circle radius (increased from 80)
+        const magZoom = 8; // Zoom level (increased from 3 for better precision)
         const magBorderWidth = 4;
 
         // Position magnifying glass offset from cursor
@@ -2140,8 +2144,14 @@ function handlePerspectiveMouseMove(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
+
+    // Use HIGH PRECISION calculation - keep decimals for smooth dragging
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
+
+    // Store raw mouse position for magnifier
+    lastPerspectiveMousePos.x = x;
+    lastPerspectiveMousePos.y = y;
 
     // Update cursor
     if (!draggedPerspectiveCorner) {
@@ -2165,13 +2175,22 @@ function handlePerspectiveMouseMove(e) {
     }
 
     if (draggedPerspectiveCorner) {
-        // Clamp to canvas bounds with margin
+        // Clamp to canvas bounds with margin - KEEP DECIMAL PRECISION
         const margin = 10;
+        // Store with full precision (no rounding)
         perspectiveCorners[draggedPerspectiveCorner].x = Math.max(margin, Math.min(canvas.width - margin, x));
         perspectiveCorners[draggedPerspectiveCorner].y = Math.max(margin, Math.min(canvas.height - margin, y));
 
         updatePerspectiveDisplay();
-        redrawWithPerspective();
+
+        // Use requestAnimationFrame for smooth redraws
+        if (!perspectiveRedrawScheduled) {
+            perspectiveRedrawScheduled = true;
+            requestAnimationFrame(() => {
+                redrawWithPerspective();
+                perspectiveRedrawScheduled = false;
+            });
+        }
     }
 }
 
