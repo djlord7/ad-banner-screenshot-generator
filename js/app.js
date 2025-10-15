@@ -547,35 +547,19 @@ function generateThumbnailWithBillboards(screenshot, callback) {
                     const centerX = (tlAdj.x + trAdj.x + blAdj.x + brAdj.x) / 4;
                     const centerY = (tlAdj.y + trAdj.y + blAdj.y + brAdj.y) / 4;
 
-                    // Calculate widths of top and bottom edges
-                    const topWidth = Math.sqrt(Math.pow(trAdj.x - tlAdj.x, 2) + Math.pow(trAdj.y - tlAdj.y, 2));
-                    const bottomWidth = Math.sqrt(Math.pow(brAdj.x - blAdj.x, 2) + Math.pow(brAdj.y - blAdj.y, 2));
-
-                    // Calculate heights of left and right edges
-                    const leftHeight = Math.sqrt(Math.pow(blAdj.x - tlAdj.x, 2) + Math.pow(blAdj.y - tlAdj.y, 2));
-                    const rightHeight = Math.sqrt(Math.pow(brAdj.x - trAdj.x, 2) + Math.pow(brAdj.y - trAdj.y, 2));
-
-                    // Average dimensions
-                    const avgWidth = (topWidth + bottomWidth) / 2;
-                    const avgHeight = (leftHeight + rightHeight) / 2;
+                    // Calculate width and height of billboard in screen space
+                    const width = Math.sqrt(Math.pow(trAdj.x - tlAdj.x, 2) + Math.pow(trAdj.y - tlAdj.y, 2));
+                    const height = Math.sqrt(Math.pow(blAdj.x - tlAdj.x, 2) + Math.pow(blAdj.y - tlAdj.y, 2));
 
                     // Calculate rotation angle from top edge
                     const angle = Math.atan2(trAdj.y - tlAdj.y, trAdj.x - tlAdj.x);
-
-                    // Calculate skew from the difference in edge angles
-                    const leftAngle = Math.atan2(blAdj.y - tlAdj.y, blAdj.x - tlAdj.x);
-                    const rightAngle = Math.atan2(brAdj.y - trAdj.y, brAdj.x - trAdj.x);
-                    const skewAngle = (leftAngle + rightAngle) / 2 - angle - Math.PI / 2;
 
                     ctx.save();
                     ctx.translate(centerX, centerY);
                     ctx.rotate(angle);
 
-                    // Apply skew transformation for perspective effect
-                    ctx.transform(1, 0, Math.tan(skewAngle), 1, 0, 0);
-
                     // Set font size based on billboard size
-                    const fontSize = Math.min(avgWidth / 8, avgHeight / 3, 24);
+                    const fontSize = Math.min(width / 8, height / 3, 24);
                     ctx.font = `bold ${fontSize}px Arial`;
                     ctx.fillStyle = 'white';
                     ctx.textAlign = 'center';
@@ -1044,35 +1028,19 @@ function drawPlaceholderBillboard(corners) {
     const centerX = (topLeft.x + topRight.x + bottomLeft.x + bottomRight.x) / 4;
     const centerY = (topLeft.y + topRight.y + bottomLeft.y + bottomRight.y) / 4;
 
-    // Calculate widths of top and bottom edges
-    const topWidth = Math.sqrt(Math.pow(topRight.x - topLeft.x, 2) + Math.pow(topRight.y - topLeft.y, 2));
-    const bottomWidth = Math.sqrt(Math.pow(bottomRight.x - bottomLeft.x, 2) + Math.pow(bottomRight.y - bottomLeft.y, 2));
-
-    // Calculate heights of left and right edges
-    const leftHeight = Math.sqrt(Math.pow(bottomLeft.x - topLeft.x, 2) + Math.pow(bottomLeft.y - topLeft.y, 2));
-    const rightHeight = Math.sqrt(Math.pow(bottomRight.x - topRight.x, 2) + Math.pow(bottomRight.y - topRight.y, 2));
-
-    // Average dimensions
-    const avgWidth = (topWidth + bottomWidth) / 2;
-    const avgHeight = (leftHeight + rightHeight) / 2;
+    // Calculate width and height of billboard
+    const width = Math.sqrt(Math.pow(topRight.x - topLeft.x, 2) + Math.pow(topRight.y - topLeft.y, 2));
+    const height = Math.sqrt(Math.pow(bottomLeft.x - topLeft.x, 2) + Math.pow(bottomLeft.y - topLeft.y, 2));
 
     // Calculate rotation angle from top edge
     const angle = Math.atan2(topRight.y - topLeft.y, topRight.x - topLeft.x);
-
-    // Calculate skew from the difference in edge angles
-    const leftAngle = Math.atan2(bottomLeft.y - topLeft.y, bottomLeft.x - topLeft.x);
-    const rightAngle = Math.atan2(bottomRight.y - topRight.y, bottomRight.x - topRight.x);
-    const skewAngle = (leftAngle + rightAngle) / 2 - angle - Math.PI / 2;
 
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
 
-    // Apply skew transformation for perspective effect
-    ctx.transform(1, 0, Math.tan(skewAngle), 1, 0, 0);
-
     // Set font size based on billboard size
-    const fontSize = Math.min(avgWidth / 8, avgHeight / 3, 48);
+    const fontSize = Math.min(width / 8, height / 3, 48);
     ctx.font = `bold ${fontSize}px Arial`;
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
