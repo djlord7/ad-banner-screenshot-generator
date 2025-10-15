@@ -1472,13 +1472,7 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         setDefaultBtn.textContent = originalText;
         setDefaultBtn.disabled = false;
 
-        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nPage will reload to show the latest version.`);
-
-        // Reload the page to fetch the latest games.json from GitHub
-        // This ensures the user sees the updated billboard configuration
-        setTimeout(() => {
-            location.reload();
-        }, 500);
+        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nReload the page to see the updated configuration.`);
 
     } catch (error) {
         console.error('❌ Error saving to GitHub:', error);
