@@ -1494,13 +1494,10 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
 async function pollForGitHubUpdate(token, commitSha, gameId, screenshotId, expectedBillboardCount) {
     console.log('🔄 Starting to track GitHub Pages deployment for commit:', commitSha);
 
-    const maxAttempts = 60; // Try for ~120 seconds (60 attempts × 2s)
     const pollInterval = 2000; // Check every 2 seconds
-    let attempts = 0;
 
     const checkDeploymentStatus = async () => {
-        attempts++;
-        console.log(`📡 Deployment check ${attempts}/${maxAttempts}...`);
+        console.log('📡 Checking deployment status...');
 
         try {
             // Check GitHub Pages Builds API
@@ -1592,13 +1589,8 @@ async function pollForGitHubUpdate(token, commitSha, gameId, screenshotId, expec
             return;
         }
 
-        if (attempts < maxAttempts) {
-            // Try again
-            setTimeout(poll, pollInterval);
-        } else {
-            // Timeout - just log, no user prompt
-            console.log('⏱️ Deployment tracking timeout reached. Changes saved to GitHub.');
-        }
+        // Keep polling until deployment is confirmed
+        setTimeout(poll, pollInterval);
     };
 
     // Start polling
