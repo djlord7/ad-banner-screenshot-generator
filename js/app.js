@@ -40,7 +40,11 @@ let perspectiveRedrawScheduled = false; // For requestAnimationFrame
 let lastPerspectiveMousePos = { x: 0, y: 0 };
 
 // Radius anchor dragging
-let draggedRadiusAnchor = null; // Which corner's radius is being dragged // Track raw mouse position
+let draggedRadiusAnchor = null; // Which corner's radius is being dragged
+
+// Quadrilateral dragging (drag to reposition)
+let isDraggingQuadrilateral = false;
+let quadDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
 
 // Auto-detection
 let openCvReady = false;
@@ -2240,6 +2244,8 @@ window.cancelPerspectiveMode = function cancelPerspectiveMode() {
     document.getElementById('add-billboard-btn').style.display = 'block';
     draggedPerspectiveCorner = null;
     draggedRadiusAnchor = null;
+    isDraggingQuadrilateral = false;
+    quadDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
 
     // Redraw using helper function
     redrawCanvas(true);
@@ -2591,6 +2597,29 @@ function redrawWithPerspective() {
     }
 }
 
+// Helper function to check if point is inside quadrilateral
+function isPointInQuadrilateral(x, y, corners) {
+    // Use ray casting algorithm
+    const vertices = [
+        corners.topLeft,
+        corners.topRight,
+        corners.bottomRight,
+        corners.bottomLeft
+    ];
+
+    let inside = false;
+    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+        const xi = vertices[i].x, yi = vertices[i].y;
+        const xj = vertices[j].x, yj = vertices[j].y;
+
+        const intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+
+    return inside;
+}
+
 // Update mouse handlers to support perspective mode
 const originalMouseDown = handleCanvasMouseDown;
 const originalMouseMove = handleCanvasMouseMove;
@@ -2672,6 +2701,21 @@ function handlePerspectiveMouseDown(e) {
             return;
         }
     }
+
+    // Finally, check if clicking inside the quadrilateral (drag to reposition)
+    if (isPointInQuadrilateral(x, y, perspectiveCorners)) {
+        isDraggingQuadrilateral = true;
+        quadDragStartPos = {
+            mouseX: x,
+            mouseY: y,
+            corners: {
+                topLeft: { ...perspectiveCorners.topLeft },
+                topRight: { ...perspectiveCorners.topRight },
+                bottomLeft: { ...perspectiveCorners.bottomLeft },
+                bottomRight: { ...perspectiveCorners.bottomRight }
+            }
+        };
+    }
 }
 
 function handlePerspectiveMouseMove(e) {
@@ -2713,8 +2757,61 @@ function handlePerspectiveMouseMove(e) {
         return;
     }
 
+    // Handle quadrilateral dragging (drag to reposition)
+    if (isDraggingQuadrilateral) {
+        const deltaX = x - quadDragStartPos.mouseX;
+        const deltaY = y - quadDragStartPos.mouseY;
+
+        // Move all corners by the same delta
+        const newCorners = {
+            topLeft: {
+                x: quadDragStartPos.corners.topLeft.x + deltaX,
+                y: quadDragStartPos.corners.topLeft.y + deltaY,
+                radius: quadDragStartPos.corners.topLeft.radius
+            },
+            topRight: {
+                x: quadDragStartPos.corners.topRight.x + deltaX,
+                y: quadDragStartPos.corners.topRight.y + deltaY,
+                radius: quadDragStartPos.corners.topRight.radius
+            },
+            bottomLeft: {
+                x: quadDragStartPos.corners.bottomLeft.x + deltaX,
+                y: quadDragStartPos.corners.bottomLeft.y + deltaY,
+                radius: quadDragStartPos.corners.bottomLeft.radius
+            },
+            bottomRight: {
+                x: quadDragStartPos.corners.bottomRight.x + deltaX,
+                y: quadDragStartPos.corners.bottomRight.y + deltaY,
+                radius: quadDragStartPos.corners.bottomRight.radius
+            }
+        };
+
+        // Check if all corners are within canvas bounds
+        const margin = 10;
+        const allWithinBounds = Object.values(newCorners).every(corner =>
+            corner.x >= margin && corner.x <= canvas.width - margin &&
+            corner.y >= margin && corner.y <= canvas.height - margin
+        );
+
+        if (allWithinBounds) {
+            perspectiveCorners = newCorners;
+        }
+
+        updatePerspectiveDisplay();
+
+        // Use requestAnimationFrame for smooth redraws
+        if (!perspectiveRedrawScheduled) {
+            perspectiveRedrawScheduled = true;
+            requestAnimationFrame(() => {
+                redrawWithPerspective();
+                perspectiveRedrawScheduled = false;
+            });
+        }
+        return;
+    }
+
     // Update cursor
-    if (!draggedPerspectiveCorner && !draggedRadiusAnchor) {
+    if (!draggedPerspectiveCorner && !draggedRadiusAnchor && !isDraggingQuadrilateral) {
         const clickRadius = 15;
         let overCorner = false;
         const radiusAnchorOffset = 25;
@@ -2762,6 +2859,12 @@ function handlePerspectiveMouseMove(e) {
             }
         }
 
+        // Check if inside quadrilateral
+        if (!overCorner && isPointInQuadrilateral(x, y, perspectiveCorners)) {
+            canvas.style.cursor = 'move';
+            overCorner = true;
+        }
+
         if (!overCorner) {
             canvas.style.cursor = 'crosshair';
         }
@@ -2790,6 +2893,8 @@ function handlePerspectiveMouseMove(e) {
 function handlePerspectiveMouseUp(e) {
     draggedPerspectiveCorner = null;
     draggedRadiusAnchor = null;
+    isDraggingQuadrilateral = false;
+    quadDragStartPos = { mouseX: 0, mouseY: 0, corners: null };
     // Redraw without magnifier
     redrawWithPerspective();
 }
