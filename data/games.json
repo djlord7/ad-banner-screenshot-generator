@@ -1971,15 +1971,9 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "game-24",
-      "name": "Town Go",
-      "screenshots": [
+        },
         {
-          "id": "game-24-ss1",
+          "id": "game-23-ss3",
           "filename": "towngo_cherifer_ss_pc.png",
           "bannerSize": "300x600",
           "billboards": [
