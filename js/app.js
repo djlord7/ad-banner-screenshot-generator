@@ -528,14 +528,47 @@ function generateThumbnailWithBillboards(screenshot, callback) {
                     const adjustX = (x) => offsetX + (x - sourceX) * scale;
                     const adjustY = (y) => offsetY + (y - sourceY) * scale;
 
-                    ctx.moveTo(adjustX(tl.x), adjustY(tl.y));
-                    ctx.lineTo(adjustX(tr.x), adjustY(tr.y));
-                    ctx.lineTo(adjustX(br.x), adjustY(br.y));
-                    ctx.lineTo(adjustX(bl.x), adjustY(bl.y));
+                    const tlAdj = { x: adjustX(tl.x), y: adjustY(tl.y) };
+                    const trAdj = { x: adjustX(tr.x), y: adjustY(tr.y) };
+                    const brAdj = { x: adjustX(br.x), y: adjustY(br.y) };
+                    const blAdj = { x: adjustX(bl.x), y: adjustY(bl.y) };
+
+                    ctx.moveTo(tlAdj.x, tlAdj.y);
+                    ctx.lineTo(trAdj.x, trAdj.y);
+                    ctx.lineTo(brAdj.x, brAdj.y);
+                    ctx.lineTo(blAdj.x, blAdj.y);
                     ctx.closePath();
 
-                    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
+                    // Fill with solid grey background
+                    ctx.fillStyle = '#808080';
                     ctx.fill();
+
+                    // Add "Your Ad Here" text with perspective
+                    const centerX = (tlAdj.x + trAdj.x + blAdj.x + brAdj.x) / 4;
+                    const centerY = (tlAdj.y + trAdj.y + blAdj.y + brAdj.y) / 4;
+
+                    // Calculate width and height of billboard in screen space
+                    const width = Math.sqrt(Math.pow(trAdj.x - tlAdj.x, 2) + Math.pow(trAdj.y - tlAdj.y, 2));
+                    const height = Math.sqrt(Math.pow(blAdj.x - tlAdj.x, 2) + Math.pow(blAdj.y - tlAdj.y, 2));
+
+                    // Calculate rotation angle from top edge
+                    const angle = Math.atan2(trAdj.y - tlAdj.y, trAdj.x - tlAdj.x);
+
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+
+                    // Set font size based on billboard size
+                    const fontSize = Math.min(width / 8, height / 3, 24);
+                    ctx.font = `bold ${fontSize}px Arial`;
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Your Ad Here', 0, 0);
+
+                    ctx.restore();
+
+                    // Add blue border for visibility
                     ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
                     ctx.lineWidth = 2;
                     ctx.stroke();
@@ -697,11 +730,14 @@ function loadBaseImage() {
         // Draw the image
         ctx.drawImage(baseImage, 0, 0);
 
-        // Draw uploaded banners on their billboards
+        // Draw all billboards (either uploaded banners or grey placeholders)
         if (currentScreenshot && currentScreenshot.billboards) {
             currentScreenshot.billboards.forEach((billboard, index) => {
                 if (billboardBanners[index] && billboard.perspective) {
                     drawBannerWithPerspective(billboardBanners[index], billboard.perspective);
+                } else if (billboard.perspective) {
+                    // Draw grey placeholder with "Your Ad Here" text
+                    drawPlaceholderBillboard(billboard.perspective);
                 }
             });
         }
@@ -971,6 +1007,49 @@ function interpolateQuad(topLeft, topRight, bottomLeft, bottomRight, u, v) {
     };
 }
 
+// Draw grey placeholder billboard with "Your Ad Here" text
+function drawPlaceholderBillboard(corners) {
+    const { topLeft, topRight, bottomLeft, bottomRight } = corners;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(topLeft.x, topLeft.y);
+    ctx.lineTo(topRight.x, topRight.y);
+    ctx.lineTo(bottomRight.x, bottomRight.y);
+    ctx.lineTo(bottomLeft.x, bottomLeft.y);
+    ctx.closePath();
+
+    // Fill with solid grey background
+    ctx.fillStyle = '#808080';
+    ctx.fill();
+
+    // Add "Your Ad Here" text with perspective
+    const centerX = (topLeft.x + topRight.x + bottomLeft.x + bottomRight.x) / 4;
+    const centerY = (topLeft.y + topRight.y + bottomLeft.y + bottomRight.y) / 4;
+
+    // Calculate width and height of billboard
+    const width = Math.sqrt(Math.pow(topRight.x - topLeft.x, 2) + Math.pow(topRight.y - topLeft.y, 2));
+    const height = Math.sqrt(Math.pow(bottomLeft.x - topLeft.x, 2) + Math.pow(bottomLeft.y - topLeft.y, 2));
+
+    // Calculate rotation angle from top edge
+    const angle = Math.atan2(topRight.y - topLeft.y, topRight.x - topLeft.x);
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(angle);
+
+    // Set font size based on billboard size
+    const fontSize = Math.min(width / 8, height / 3, 48);
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Your Ad Here', 0, 0);
+
+    ctx.restore();
+    ctx.restore();
+}
+
 // Draw the screenshot with billboards
 function drawScreenshot() {
     if (!baseImage || !baseImage.complete) return;
@@ -981,10 +1060,13 @@ function drawScreenshot() {
     // Draw base screenshot
     ctx.drawImage(baseImage, 0, 0);
 
-    // Draw all uploaded banners on their billboards
+    // Draw all billboards (either uploaded banners or grey placeholders)
     currentScreenshot.billboards.forEach((billboard, index) => {
         if (billboardBanners[index]) {
             drawBannerWithPerspective(billboardBanners[index], billboard.perspective);
+        } else {
+            // Draw grey placeholder with "Your Ad Here" text
+            drawPlaceholderBillboard(billboard.perspective);
         }
     });
 
