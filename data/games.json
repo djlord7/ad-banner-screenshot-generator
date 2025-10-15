@@ -400,7 +400,34 @@
           "id": "game-5-ss2",
           "filename": "cooking_diary_cherifer_ss_mobile.png",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 1235,
+              "y": 52,
+              "width": 264,
+              "height": 161,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 1235,
+                  "y": 52
+                },
+                "topRight": {
+                  "x": 1500,
+                  "y": 52
+                },
+                "bottomLeft": {
+                  "x": 1244,
+                  "y": 214
+                },
+                "bottomRight": {
+                  "x": 1491,
+                  "y": 214
+                }
+              }
+            }
+          ]
         }
       ]
     },
