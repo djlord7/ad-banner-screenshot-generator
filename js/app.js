@@ -8,6 +8,7 @@ let selectedBillboardIndex = null;
 let transformTargetBillboardIndex = 0; // For dropdown selection in transform mode
 let configData = null; // Store config data
 let isDevModeUnlocked = false; // Track if passcode has been entered
+let currentPasscode = null; // Store passcode for encryption/decryption
 
 // Canvas elements
 let canvas = null;
@@ -2182,6 +2183,36 @@ async function sha256(message) {
     return hashHex;
 }
 
+// Simple XOR encryption/decryption with passcode as key
+function encryptToken(token, passcode) {
+    // Use passcode as repeating key
+    let encrypted = '';
+    for (let i = 0; i < token.length; i++) {
+        const charCode = token.charCodeAt(i) ^ passcode.charCodeAt(i % passcode.length);
+        encrypted += String.fromCharCode(charCode);
+    }
+    // Convert to base64 to make it safe for JSON
+    return btoa(encrypted);
+}
+
+function decryptToken(encryptedToken, passcode) {
+    try {
+        if (!encryptedToken) return '';
+        // Decode from base64
+        const encrypted = atob(encryptedToken);
+        // Use passcode as repeating key
+        let decrypted = '';
+        for (let i = 0; i < encrypted.length; i++) {
+            const charCode = encrypted.charCodeAt(i) ^ passcode.charCodeAt(i % passcode.length);
+            decrypted += String.fromCharCode(charCode);
+        }
+        return decrypted;
+    } catch (error) {
+        console.error('Decryption failed:', error);
+        return '';
+    }
+}
+
 // Verify passcode
 async function verifyPasscode() {
     const passcodeInput = document.getElementById('passcode-input');
@@ -2202,8 +2233,9 @@ async function verifyPasscode() {
 
     // Compare with stored hash
     if (enteredHash === configData.passcodeHash) {
-        // Correct passcode
+        // Correct passcode - store it for encryption/decryption
         isDevModeUnlocked = true;
+        currentPasscode = enteredPasscode;
         passcodeModal.style.display = 'none';
         settingsModal.style.display = 'flex';
         loadTokenStatus();
@@ -2237,20 +2269,29 @@ async function saveGitHubToken() {
         return;
     }
 
+    if (!currentPasscode) {
+        statusEl.textContent = '❌ Passcode not available for encryption';
+        statusEl.style.color = '#ef4444';
+        return;
+    }
+
     try {
-        statusEl.textContent = '⏳ Saving token to GitHub...';
+        statusEl.textContent = '⏳ Encrypting and saving token to GitHub...';
         statusEl.style.color = '#3b82f6';
 
         // Fetch current config.json from GitHub
         const { sha } = await fetchConfigJsonFromGitHub(token);
 
-        // Update config with new token
-        configData.githubToken = token;
+        // Encrypt the token before storing
+        const encryptedToken = encryptToken(token, currentPasscode);
+
+        // Update config with encrypted token
+        configData.githubToken = encryptedToken;
 
         // Commit updated config to GitHub
         await commitConfigJsonToGitHub(token, configData, sha);
 
-        statusEl.textContent = '✅ Token saved successfully to GitHub!';
+        statusEl.textContent = '✅ Token saved successfully to GitHub (encrypted)!';
         statusEl.style.color = '#10b981';
 
         setTimeout(() => {
@@ -2304,22 +2345,33 @@ async function clearGitHubToken() {
 
 // Load token status
 function loadTokenStatus() {
-    const token = configData?.githubToken || '';
+    const encryptedToken = configData?.githubToken || '';
     const statusEl = document.getElementById('token-status');
 
-    if (token) {
-        statusEl.textContent = '✓ Token is configured (from GitHub)';
+    if (encryptedToken && currentPasscode) {
+        // Decrypt token for display
+        const decryptedToken = decryptToken(encryptedToken, currentPasscode);
+        statusEl.textContent = '✓ Token is configured (encrypted on GitHub)';
         statusEl.style.color = '#10b981';
-        document.getElementById('github-token').value = token;
+        document.getElementById('github-token').value = decryptedToken;
+    } else if (encryptedToken) {
+        statusEl.textContent = '✓ Token is configured (encrypted)';
+        statusEl.style.color = '#10b981';
+        document.getElementById('github-token').value = '';
     } else {
         statusEl.textContent = 'No token configured';
         statusEl.style.color = '#94a3b8';
+        document.getElementById('github-token').value = '';
     }
 }
 
-// Get GitHub token
+// Get GitHub token (decrypted)
 function getGitHubToken() {
-    return configData?.githubToken || '';
+    const encryptedToken = configData?.githubToken || '';
+    if (!encryptedToken || !currentPasscode) {
+        return '';
+    }
+    return decryptToken(encryptedToken, currentPasscode);
 }
 
 // Fetch current config.json from GitHub
