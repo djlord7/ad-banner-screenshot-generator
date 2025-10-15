@@ -132,7 +132,34 @@
           "id": "game-2-ss2",
           "filename": "Airplane Game Flight Simulator.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 583,
+              "y": 300,
+              "width": 213,
+              "height": 219,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 586,
+                  "y": 303
+                },
+                "topRight": {
+                  "x": 796,
+                  "y": 300
+                },
+                "bottomLeft": {
+                  "x": 583,
+                  "y": 519
+                },
+                "bottomRight": {
+                  "x": 787,
+                  "y": 519
+                }
+              }
+            }
+          ]
         }
       ]
     },
