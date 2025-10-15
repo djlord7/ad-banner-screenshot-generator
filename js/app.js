@@ -80,6 +80,21 @@ async function loadConfigData() {
         const response = await fetch('data/config.json');
         configData = await response.json();
         console.log('Config data loaded successfully');
+
+        // Try to restore passcode from sessionStorage (for current browser session)
+        const storedPasscode = sessionStorage.getItem('dev_passcode');
+        if (storedPasscode) {
+            // Verify it's still valid
+            const storedHash = await sha256(storedPasscode);
+            if (storedHash === configData.passcodeHash) {
+                currentPasscode = storedPasscode;
+                isDevModeUnlocked = true;
+                console.log('✅ Passcode restored from session');
+            } else {
+                // Invalid passcode in session, clear it
+                sessionStorage.removeItem('dev_passcode');
+            }
+        }
     } catch (error) {
         console.error('Error loading config data:', error);
         // Create default config if not found
@@ -2265,6 +2280,10 @@ async function verifyPasscode() {
         // Correct passcode - store it for encryption/decryption
         isDevModeUnlocked = true;
         currentPasscode = enteredPasscode;
+
+        // Save passcode to sessionStorage (only for current session)
+        sessionStorage.setItem('dev_passcode', enteredPasscode);
+
         passcodeModal.style.display = 'none';
         settingsModal.style.display = 'flex';
         loadTokenStatus();
