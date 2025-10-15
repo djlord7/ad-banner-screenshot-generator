@@ -11,7 +11,7 @@
         <header>
             <h1>Ad Banner Screenshot Generator</h1>
             <p>Automated screenshot generation for in-game advertising</p>
-            <button id="settings-btn" class="btn btn-secondary" style="position: absolute; top: 20px; right: 20px;">⚙️ Settings</button>
+            <button id="settings-btn" class="btn btn-secondary" style="position: absolute; top: 20px; right: 20px;">🔓 Enable Dev Mode</button>
         </header>
 
         <!-- Passcode Modal -->
@@ -37,21 +37,7 @@
                     <h2>GitHub Settings</h2>
                     <span id="dev-mode-indicator" style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">🔓 DEV MODE</span>
                 </div>
-                <p>Configure GitHub integration and "Set as Default" feature:</p>
-
-                <!-- Set as Default Toggle -->
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-radius: 8px; border: 2px solid #e2e8f0;">
-                        <div>
-                            <label style="margin: 0; font-weight: 600; display: block; margin-bottom: 4px;">Enable "Set as Default"</label>
-                            <p class="help-text-small" style="margin: 0; color: #64748b;">Allow saving billboard configurations to GitHub</p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="set-as-default-toggle">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
+                <p>Configure GitHub integration for saving billboard configurations:</p>
 
                 <!-- GitHub Token -->
                 <div class="form-group">
@@ -127,7 +113,7 @@
 
                         <div class="area-selection-controls" id="area-selection-controls" style="display: none;">
                             <h4>Define Billboard Area</h4>
-                            <p class="help-text">Select a billboard to transform, then choose a mode to adjust its position.</p>
+                            <p class="help-text">Select a billboard below, then click to adjust its position, shape, and rounded corners.</p>
 
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="billboard-selector">Select Billboard to Transform:</label>
@@ -136,10 +122,7 @@
                                 </select>
                             </div>
 
-                            <div class="mode-selector">
-                                <button id="start-area-selection-btn" class="btn btn-secondary" onclick="console.log('Rectangle Mode clicked'); window.startAreaSelection && window.startAreaSelection();">Rectangle Mode</button>
-                                <button id="start-perspective-mode-btn" class="btn btn-secondary" onclick="console.log('Perspective Mode clicked'); window.startPerspectiveMode && window.startPerspectiveMode();">Perspective Mode</button>
-                            </div>
+                            <button id="start-perspective-mode-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 15px;" onclick="console.log('Edit Billboard Area clicked'); window.startPerspectiveMode && window.startPerspectiveMode();">Edit Billboard Area</button>
 
                             <button id="add-billboard-btn" class="btn btn-success btn-add-billboard" style="margin-top: 15px;" onclick="console.log('Button clicked!'); window.addNewBillboard && window.addNewBillboard();">
                                 <span style="font-size: 1.2em;">+</span> Add Another Billboard
@@ -155,7 +138,7 @@
                             </div>
 
                             <div id="perspective-adjust-controls" style="display: none;">
-                                <p class="help-text-small">Drag each corner to match the billboard's perspective</p>
+                                <p class="help-text-small">Drag corner handles to position the billboard. Drag blue circles to round corners.</p>
                                 <div class="corner-coordinates">
                                     <div class="corner-coord">
                                         <strong>TL:</strong> <span id="corner-tl">0, 0</span>
@@ -170,8 +153,8 @@
                                         <strong>BR:</strong> <span id="corner-br">0, 0</span>
                                     </div>
                                 </div>
-                                <button id="confirm-perspective-btn" class="btn btn-success" onclick="console.log('Confirm perspective clicked'); window.confirmPerspectiveMode && window.confirmPerspectiveMode();">Confirm Perspective</button>
-                                <button id="cancel-perspective-btn" class="btn btn-danger" onclick="console.log('Cancel perspective clicked'); window.cancelPerspectiveMode && window.cancelPerspectiveMode();">Cancel</button>
+                                <button id="confirm-perspective-btn" class="btn btn-success" onclick="console.log('Confirm clicked'); window.confirmPerspectiveMode && window.confirmPerspectiveMode();">Confirm</button>
+                                <button id="cancel-perspective-btn" class="btn btn-danger" onclick="console.log('Cancel clicked'); window.cancelPerspectiveMode && window.cancelPerspectiveMode();">Cancel</button>
                             </div>
 
                             <!-- Set as Default buttons (shown after confirm) -->

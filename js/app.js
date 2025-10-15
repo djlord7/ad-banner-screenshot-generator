@@ -8,6 +8,7 @@ let selectedBillboardIndex = null;
 let transformTargetBillboardIndex = 0; // For dropdown selection in transform mode
 let configData = null; // Store config data
 let isDevModeUnlocked = false; // Track if passcode has been entered
+let isDevModeUIEnabled = false; // Track if dev mode UI is visible (session-based)
 let currentPasscode = null; // Store passcode for encryption/decryption
 
 // Canvas elements
@@ -28,15 +29,18 @@ let draggedPerspectiveCorner = null;
 
 // Perspective corners (with sub-pixel precision)
 let perspectiveCorners = {
-    topLeft: { x: 0, y: 0 },
-    topRight: { x: 0, y: 0 },
-    bottomLeft: { x: 0, y: 0 },
-    bottomRight: { x: 0, y: 0 }
+    topLeft: { x: 0, y: 0, radius: 0 },
+    topRight: { x: 0, y: 0, radius: 0 },
+    bottomLeft: { x: 0, y: 0, radius: 0 },
+    bottomRight: { x: 0, y: 0, radius: 0 }
 };
 
 // Perspective precision tracking
 let perspectiveRedrawScheduled = false; // For requestAnimationFrame
-let lastPerspectiveMousePos = { x: 0, y: 0 }; // Track raw mouse position
+let lastPerspectiveMousePos = { x: 0, y: 0 };
+
+// Radius anchor dragging
+let draggedRadiusAnchor = null; // Which corner's radius is being dragged // Track raw mouse position
 
 // Auto-detection
 let openCvReady = false;
@@ -70,6 +74,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadConfigData();
     await loadGamesData();
+
+    // Check if dev mode was enabled in this session
+    checkDevModeSession();
+
     setupEventListeners();
     setupDetectionListeners();
 });
@@ -138,6 +146,38 @@ function populateGameDropdown() {
 }
 
 // Setup event listeners
+// Check if dev mode was enabled in current session
+async function checkDevModeSession() {
+    const devModeEnabled = sessionStorage.getItem('dev_mode_enabled');
+    const savedPasscode = sessionStorage.getItem('dev_passcode');
+
+    if (devModeEnabled === 'true' && savedPasscode && configData) {
+        // Verify the saved passcode is still correct
+        const savedHash = await sha256(savedPasscode);
+        if (savedHash === configData.passcodeHash) {
+            isDevModeUnlocked = true;
+            isDevModeUIEnabled = true;
+            currentPasscode = savedPasscode;
+            enableDevModeUI();
+        }
+    }
+}
+
+// Enable dev mode UI elements
+function enableDevModeUI() {
+    // Update settings button
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.innerHTML = '⚙️ Settings';
+    }
+
+    // Show Define Billboard Area section
+    const areaSelectionControls = document.getElementById('area-selection-controls');
+    if (areaSelectionControls) {
+        areaSelectionControls.style.display = 'block';
+    }
+}
+
 function setupEventListeners() {
     gameSelect.addEventListener('change', handleGameSelection);
     backBtn.addEventListener('click', handleBackToGallery);
@@ -169,12 +209,12 @@ function setupEventListeners() {
     const passcodeError = document.getElementById('passcode-error');
 
     if (settingsBtn) settingsBtn.addEventListener('click', () => {
-        if (isDevModeUnlocked) {
-            // Already unlocked, go straight to settings
+        if (isDevModeUIEnabled) {
+            // Dev mode already enabled, go straight to settings
             settingsModal.style.display = 'flex';
             loadTokenStatus();
         } else {
-            // Show passcode modal
+            // Show passcode modal to enable dev mode
             passcodeModal.style.display = 'flex';
             passcodeInput.value = '';
             passcodeError.style.display = 'none';
@@ -195,12 +235,6 @@ function setupEventListeners() {
     });
     if (saveTokenBtn) saveTokenBtn.addEventListener('click', saveGitHubToken);
     if (clearTokenBtn) clearTokenBtn.addEventListener('click', clearGitHubToken);
-
-    // Set as Default toggle
-    const setAsDefaultToggle = document.getElementById('set-as-default-toggle');
-    if (setAsDefaultToggle) {
-        setAsDefaultToggle.addEventListener('change', handleSetAsDefaultToggle);
-    }
 
     // Drag and drop
     uploadArea.addEventListener('dragover', handleDragOver);
@@ -385,9 +419,9 @@ function loadScreenshotEditor() {
         }];
     }
 
-    // Show area selection controls
+    // Show area selection controls only if dev mode is enabled
     const areaSelectionControls = document.getElementById('area-selection-controls');
-    if (areaSelectionControls) {
+    if (areaSelectionControls && isDevModeUIEnabled) {
         areaSelectionControls.style.display = 'block';
     }
 
@@ -422,6 +456,15 @@ function loadBaseImage() {
 
         // Draw the image
         ctx.drawImage(baseImage, 0, 0);
+
+        // Draw uploaded banners on their billboards
+        if (currentScreenshot && currentScreenshot.billboards) {
+            currentScreenshot.billboards.forEach((billboard, index) => {
+                if (billboardBanners[index] && billboard.perspective) {
+                    drawBannerWithPerspective(billboardBanners[index], billboard.perspective);
+                }
+            });
+        }
 
         // Draw billboard outlines
         drawBillboardOutlines();
@@ -480,19 +523,23 @@ function clampCornersToCanvas(corners) {
     return {
         topLeft: {
             x: Math.max(margin, Math.min(canvas.width - margin, corners.topLeft.x)),
-            y: Math.max(margin, Math.min(canvas.height - margin, corners.topLeft.y))
+            y: Math.max(margin, Math.min(canvas.height - margin, corners.topLeft.y)),
+            radius: corners.topLeft.radius || 0
         },
         topRight: {
             x: Math.max(margin, Math.min(canvas.width - margin, corners.topRight.x)),
-            y: Math.max(margin, Math.min(canvas.height - margin, corners.topRight.y))
+            y: Math.max(margin, Math.min(canvas.height - margin, corners.topRight.y)),
+            radius: corners.topRight.radius || 0
         },
         bottomLeft: {
             x: Math.max(margin, Math.min(canvas.width - margin, corners.bottomLeft.x)),
-            y: Math.max(margin, Math.min(canvas.height - margin, corners.bottomLeft.y))
+            y: Math.max(margin, Math.min(canvas.height - margin, corners.bottomLeft.y)),
+            radius: corners.bottomLeft.radius || 0
         },
         bottomRight: {
             x: Math.max(margin, Math.min(canvas.width - margin, corners.bottomRight.x)),
-            y: Math.max(margin, Math.min(canvas.height - margin, corners.bottomRight.y))
+            y: Math.max(margin, Math.min(canvas.height - margin, corners.bottomRight.y)),
+            radius: corners.bottomRight.radius || 0
         }
     };
 }
@@ -504,12 +551,42 @@ function drawBannerWithPerspective(bannerImage, corners) {
     // Save context
     ctx.save();
 
-    // Create clipping path for the quadrilateral
+    // Create clipping path for the quadrilateral with rounded corners
     ctx.beginPath();
-    ctx.moveTo(topLeft.x, topLeft.y);
-    ctx.lineTo(topRight.x, topRight.y);
-    ctx.lineTo(bottomRight.x, bottomRight.y);
-    ctx.lineTo(bottomLeft.x, bottomLeft.y);
+
+    // Get radius values (default to 0 if not present)
+    const tlRadius = topLeft.radius || 0;
+    const trRadius = topRight.radius || 0;
+    const brRadius = bottomRight.radius || 0;
+    const blRadius = bottomLeft.radius || 0;
+
+    // Start at top-left corner (after rounded area if applicable)
+    ctx.moveTo(topLeft.x + tlRadius, topLeft.y);
+
+    // Top edge to top-right corner
+    ctx.lineTo(topRight.x - trRadius, topRight.y);
+    if (trRadius > 0) {
+        ctx.arcTo(topRight.x, topRight.y, topRight.x, topRight.y + trRadius, trRadius);
+    }
+
+    // Right edge to bottom-right corner
+    ctx.lineTo(bottomRight.x, bottomRight.y - brRadius);
+    if (brRadius > 0) {
+        ctx.arcTo(bottomRight.x, bottomRight.y, bottomRight.x - brRadius, bottomRight.y, brRadius);
+    }
+
+    // Bottom edge to bottom-left corner
+    ctx.lineTo(bottomLeft.x + blRadius, bottomLeft.y);
+    if (blRadius > 0) {
+        ctx.arcTo(bottomLeft.x, bottomLeft.y, bottomLeft.x, bottomLeft.y - blRadius, blRadius);
+    }
+
+    // Left edge back to top-left corner
+    ctx.lineTo(topLeft.x, topLeft.y + tlRadius);
+    if (tlRadius > 0) {
+        ctx.arcTo(topLeft.x, topLeft.y, topLeft.x + tlRadius, topLeft.y, tlRadius);
+    }
+
     ctx.closePath();
     ctx.clip();
 
@@ -1978,10 +2055,22 @@ window.startPerspectiveMode = function startPerspectiveMode() {
     // Initialize perspective corners from target billboard
     if (targetBillboard && targetBillboard.perspective) {
         perspectiveCorners = {
-            topLeft: { ...targetBillboard.perspective.topLeft },
-            topRight: { ...targetBillboard.perspective.topRight },
-            bottomLeft: { ...targetBillboard.perspective.bottomLeft },
-            bottomRight: { ...targetBillboard.perspective.bottomRight }
+            topLeft: {
+                ...targetBillboard.perspective.topLeft,
+                radius: targetBillboard.perspective.topLeft.radius || 0
+            },
+            topRight: {
+                ...targetBillboard.perspective.topRight,
+                radius: targetBillboard.perspective.topRight.radius || 0
+            },
+            bottomLeft: {
+                ...targetBillboard.perspective.bottomLeft,
+                radius: targetBillboard.perspective.bottomLeft.radius || 0
+            },
+            bottomRight: {
+                ...targetBillboard.perspective.bottomRight,
+                radius: targetBillboard.perspective.bottomRight.radius || 0
+            }
         };
 
         // Clamp existing corners to ensure they're within canvas bounds
@@ -1994,10 +2083,10 @@ window.startPerspectiveMode = function startPerspectiveMode() {
         const defaultHeight = Math.min(400, canvas.height * 0.5); // 50% of height or 400px max
 
         perspectiveCorners = {
-            topLeft: { x: cx - defaultWidth / 2, y: cy - defaultHeight / 2 },
-            topRight: { x: cx + defaultWidth / 2, y: cy - defaultHeight / 2 },
-            bottomLeft: { x: cx - defaultWidth / 2, y: cy + defaultHeight / 2 },
-            bottomRight: { x: cx + defaultWidth / 2, y: cy + defaultHeight / 2 }
+            topLeft: { x: cx - defaultWidth / 2, y: cy - defaultHeight / 2, radius: 0 },
+            topRight: { x: cx + defaultWidth / 2, y: cy - defaultHeight / 2, radius: 0 },
+            bottomLeft: { x: cx - defaultWidth / 2, y: cy + defaultHeight / 2, radius: 0 },
+            bottomRight: { x: cx + defaultWidth / 2, y: cy + defaultHeight / 2, radius: 0 }
         };
 
         // Ensure default corners are within bounds
@@ -2006,7 +2095,7 @@ window.startPerspectiveMode = function startPerspectiveMode() {
 
     document.getElementById('perspective-adjust-controls').style.display = 'block';
     document.getElementById('area-adjust-controls').style.display = 'none';
-    document.querySelector('.mode-selector').style.display = 'none';
+    document.getElementById('start-perspective-mode-btn').style.display = 'none';
     document.getElementById('add-billboard-btn').style.display = 'none';
 
     updatePerspectiveDisplay();
@@ -2018,9 +2107,10 @@ window.cancelPerspectiveMode = function cancelPerspectiveMode() {
     perspectiveMode = false;
     canvas.classList.remove('area-selection-active');
     document.getElementById('perspective-adjust-controls').style.display = 'none';
-    document.querySelector('.mode-selector').style.display = 'flex';
+    document.getElementById('start-perspective-mode-btn').style.display = 'block';
     document.getElementById('add-billboard-btn').style.display = 'block';
     draggedPerspectiveCorner = null;
+    draggedRadiusAnchor = null;
 
     // Redraw using helper function
     redrawCanvas(true);
@@ -2033,12 +2123,28 @@ window.confirmPerspectiveMode = function confirmPerspectiveMode() {
         selectedBillboard = currentScreenshot.billboards[0];
     }
 
-    // Update billboard with perspective corners
+    // Update billboard with perspective corners including radius
     currentScreenshot.billboards[selectedBillboardIndex].perspective = {
-        topLeft: { x: Math.round(perspectiveCorners.topLeft.x), y: Math.round(perspectiveCorners.topLeft.y) },
-        topRight: { x: Math.round(perspectiveCorners.topRight.x), y: Math.round(perspectiveCorners.topRight.y) },
-        bottomLeft: { x: Math.round(perspectiveCorners.bottomLeft.x), y: Math.round(perspectiveCorners.bottomLeft.y) },
-        bottomRight: { x: Math.round(perspectiveCorners.bottomRight.x), y: Math.round(perspectiveCorners.bottomRight.y) }
+        topLeft: {
+            x: Math.round(perspectiveCorners.topLeft.x),
+            y: Math.round(perspectiveCorners.topLeft.y),
+            radius: Math.round(perspectiveCorners.topLeft.radius || 0)
+        },
+        topRight: {
+            x: Math.round(perspectiveCorners.topRight.x),
+            y: Math.round(perspectiveCorners.topRight.y),
+            radius: Math.round(perspectiveCorners.topRight.radius || 0)
+        },
+        bottomLeft: {
+            x: Math.round(perspectiveCorners.bottomLeft.x),
+            y: Math.round(perspectiveCorners.bottomLeft.y),
+            radius: Math.round(perspectiveCorners.bottomLeft.radius || 0)
+        },
+        bottomRight: {
+            x: Math.round(perspectiveCorners.bottomRight.x),
+            y: Math.round(perspectiveCorners.bottomRight.y),
+            radius: Math.round(perspectiveCorners.bottomRight.radius || 0)
+        }
     };
 
     // Calculate bounding box for x, y, width, height
@@ -2057,9 +2163,10 @@ window.confirmPerspectiveMode = function confirmPerspectiveMode() {
     perspectiveMode = false;
     canvas.classList.remove('area-selection-active');
     document.getElementById('perspective-adjust-controls').style.display = 'none';
-    document.querySelector('.mode-selector').style.display = 'flex';
+    document.getElementById('start-perspective-mode-btn').style.display = 'block';
     document.getElementById('add-billboard-btn').style.display = 'block'; // Show "Add Billboard" button
     draggedPerspectiveCorner = null;
+    draggedRadiusAnchor = null;
 
     // Show "Set as Default" button for pre-configured screenshots
     if (currentGame && currentGame.id !== 'uploaded') {
@@ -2078,10 +2185,26 @@ window.confirmPerspectiveMode = function confirmPerspectiveMode() {
             const detected = detectedRectangles[window.activeBillboardIndex];
             if (detected) {
                 const updatedCorners = {
-                    topLeft: { x: Math.round(perspectiveCorners.topLeft.x), y: Math.round(perspectiveCorners.topLeft.y) },
-                    topRight: { x: Math.round(perspectiveCorners.topRight.x), y: Math.round(perspectiveCorners.topRight.y) },
-                    bottomLeft: { x: Math.round(perspectiveCorners.bottomLeft.x), y: Math.round(perspectiveCorners.bottomLeft.y) },
-                    bottomRight: { x: Math.round(perspectiveCorners.bottomRight.x), y: Math.round(perspectiveCorners.bottomRight.y) }
+                    topLeft: {
+                        x: Math.round(perspectiveCorners.topLeft.x),
+                        y: Math.round(perspectiveCorners.topLeft.y),
+                        radius: Math.round(perspectiveCorners.topLeft.radius || 0)
+                    },
+                    topRight: {
+                        x: Math.round(perspectiveCorners.topRight.x),
+                        y: Math.round(perspectiveCorners.topRight.y),
+                        radius: Math.round(perspectiveCorners.topRight.radius || 0)
+                    },
+                    bottomLeft: {
+                        x: Math.round(perspectiveCorners.bottomLeft.x),
+                        y: Math.round(perspectiveCorners.bottomLeft.y),
+                        radius: Math.round(perspectiveCorners.bottomLeft.radius || 0)
+                    },
+                    bottomRight: {
+                        x: Math.round(perspectiveCorners.bottomRight.x),
+                        y: Math.round(perspectiveCorners.bottomRight.y),
+                        radius: Math.round(perspectiveCorners.bottomRight.radius || 0)
+                    }
                 };
 
                 detected.corners = updatedCorners;
@@ -2131,20 +2254,70 @@ function redrawWithPerspective() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(baseImage, 0, 0);
 
-    // Draw semi-transparent overlay
+    // Draw semi-transparent overlay FIRST
     ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw perspective quadrilateral
+    // Draw existing banners for all billboards ON TOP of overlay
+    if (currentScreenshot && currentScreenshot.billboards) {
+        currentScreenshot.billboards.forEach((billboard, index) => {
+            // Draw banner if it exists
+            if (billboardBanners[index] && billboard.perspective) {
+                // For the billboard being edited, use the current perspectiveCorners (live preview)
+                if (index === selectedBillboardIndex) {
+                    drawBannerWithPerspective(billboardBanners[index], perspectiveCorners);
+                } else {
+                    // For other billboards, use their saved perspective
+                    drawBannerWithPerspective(billboardBanners[index], billboard.perspective);
+                }
+            }
+        });
+    }
+
+    // Draw perspective quadrilateral with rounded corners
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 3;
     ctx.setLineDash([10, 5]);
 
     ctx.beginPath();
-    ctx.moveTo(perspectiveCorners.topLeft.x, perspectiveCorners.topLeft.y);
-    ctx.lineTo(perspectiveCorners.topRight.x, perspectiveCorners.topRight.y);
-    ctx.lineTo(perspectiveCorners.bottomRight.x, perspectiveCorners.bottomRight.y);
-    ctx.lineTo(perspectiveCorners.bottomLeft.x, perspectiveCorners.bottomLeft.y);
+
+    // Get radius values
+    const tlRadius = perspectiveCorners.topLeft.radius || 0;
+    const trRadius = perspectiveCorners.topRight.radius || 0;
+    const brRadius = perspectiveCorners.bottomRight.radius || 0;
+    const blRadius = perspectiveCorners.bottomLeft.radius || 0;
+
+    // Start at top-left corner (after rounded area)
+    ctx.moveTo(perspectiveCorners.topLeft.x + tlRadius, perspectiveCorners.topLeft.y);
+
+    // Top edge to top-right corner
+    ctx.lineTo(perspectiveCorners.topRight.x - trRadius, perspectiveCorners.topRight.y);
+    if (trRadius > 0) {
+        ctx.arcTo(perspectiveCorners.topRight.x, perspectiveCorners.topRight.y,
+                  perspectiveCorners.topRight.x, perspectiveCorners.topRight.y + trRadius, trRadius);
+    }
+
+    // Right edge to bottom-right corner
+    ctx.lineTo(perspectiveCorners.bottomRight.x, perspectiveCorners.bottomRight.y - brRadius);
+    if (brRadius > 0) {
+        ctx.arcTo(perspectiveCorners.bottomRight.x, perspectiveCorners.bottomRight.y,
+                  perspectiveCorners.bottomRight.x - brRadius, perspectiveCorners.bottomRight.y, brRadius);
+    }
+
+    // Bottom edge to bottom-left corner
+    ctx.lineTo(perspectiveCorners.bottomLeft.x + blRadius, perspectiveCorners.bottomLeft.y);
+    if (blRadius > 0) {
+        ctx.arcTo(perspectiveCorners.bottomLeft.x, perspectiveCorners.bottomLeft.y,
+                  perspectiveCorners.bottomLeft.x, perspectiveCorners.bottomLeft.y - blRadius, blRadius);
+    }
+
+    // Left edge back to top-left corner
+    ctx.lineTo(perspectiveCorners.topLeft.x, perspectiveCorners.topLeft.y + tlRadius);
+    if (tlRadius > 0) {
+        ctx.arcTo(perspectiveCorners.topLeft.x, perspectiveCorners.topLeft.y,
+                  perspectiveCorners.topLeft.x + tlRadius, perspectiveCorners.topLeft.y, tlRadius);
+    }
+
     ctx.closePath();
     ctx.stroke();
     ctx.setLineDash([]);
@@ -2171,6 +2344,55 @@ function redrawWithPerspective() {
         ctx.beginPath();
         ctx.arc(corner.pos.x, corner.pos.y, dotRadius, 0, 2 * Math.PI);
         ctx.fill();
+    });
+
+    // Draw radius anchor handles (blue circles inside corners)
+    const radiusAnchorRadius = 6;
+    const radiusAnchorOffset = 25; // Distance from corner toward center
+
+    corners.forEach(corner => {
+        // Calculate direction from corner toward center of quad
+        const centerX = (perspectiveCorners.topLeft.x + perspectiveCorners.topRight.x +
+                        perspectiveCorners.bottomLeft.x + perspectiveCorners.bottomRight.x) / 4;
+        const centerY = (perspectiveCorners.topLeft.y + perspectiveCorners.topRight.y +
+                        perspectiveCorners.bottomLeft.y + perspectiveCorners.bottomRight.y) / 4;
+
+        const dx = centerX - corner.pos.x;
+        const dy = centerY - corner.pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 0) {
+            const normalizedDx = dx / dist;
+            const normalizedDy = dy / dist;
+
+            // Position radius anchor along diagonal toward center
+            const anchorX = corner.pos.x + normalizedDx * radiusAnchorOffset;
+            const anchorY = corner.pos.y + normalizedDy * radiusAnchorOffset;
+
+            // Draw white border
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(anchorX, anchorY, radiusAnchorRadius + 2, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw blue filled circle for radius anchor
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.arc(anchorX, anchorY, radiusAnchorRadius, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // If this corner has a radius, draw a visual indicator
+            if (corner.pos.radius > 0) {
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(corner.pos.x, corner.pos.y);
+                ctx.lineTo(anchorX, anchorY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
     });
 
     // Draw magnifying glass effect if dragging a corner
@@ -2278,9 +2500,41 @@ function handlePerspectiveMouseDown(e) {
     const y = (e.clientY - rect.top) * scaleY;
 
     const clickRadius = 15;
+    const radiusAnchorOffset = 25;
 
-    // Check which corner is clicked
+    // First check if clicking on a radius anchor (higher priority than corner)
     const corners = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'];
+
+    // Calculate center for radius anchor positioning
+    const centerX = (perspectiveCorners.topLeft.x + perspectiveCorners.topRight.x +
+                    perspectiveCorners.bottomLeft.x + perspectiveCorners.bottomRight.x) / 4;
+    const centerY = (perspectiveCorners.topLeft.y + perspectiveCorners.topRight.y +
+                    perspectiveCorners.bottomLeft.y + perspectiveCorners.bottomRight.y) / 4;
+
+    for (const cornerName of corners) {
+        const corner = perspectiveCorners[cornerName];
+
+        // Calculate radius anchor position
+        const dx = centerX - corner.x;
+        const dy = centerY - corner.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 0) {
+            const normalizedDx = dx / dist;
+            const normalizedDy = dy / dist;
+            const anchorX = corner.x + normalizedDx * radiusAnchorOffset;
+            const anchorY = corner.y + normalizedDy * radiusAnchorOffset;
+
+            // Check if clicked on radius anchor
+            const anchorDistance = Math.sqrt(Math.pow(x - anchorX, 2) + Math.pow(y - anchorY, 2));
+            if (anchorDistance <= clickRadius) {
+                draggedRadiusAnchor = cornerName;
+                return;
+            }
+        }
+    }
+
+    // Then check which corner is clicked
     for (const cornerName of corners) {
         const corner = perspectiveCorners[cornerName];
         const distance = Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2));
@@ -2304,19 +2558,78 @@ function handlePerspectiveMouseMove(e) {
     lastPerspectiveMousePos.x = x;
     lastPerspectiveMousePos.y = y;
 
+    // Handle radius anchor dragging
+    if (draggedRadiusAnchor) {
+        const corner = perspectiveCorners[draggedRadiusAnchor];
+
+        // Calculate distance from mouse to corner
+        const dx = x - corner.x;
+        const dy = y - corner.y;
+        const distanceFromCorner = Math.sqrt(dx * dx + dy * dy);
+
+        // Set radius based on distance (max 50px)
+        const maxRadius = 50;
+        const radius = Math.min(maxRadius, Math.max(0, distanceFromCorner - 10)); // -10 to account for anchor offset
+
+        corner.radius = radius;
+
+        // Use requestAnimationFrame for smooth redraws
+        if (!perspectiveRedrawScheduled) {
+            perspectiveRedrawScheduled = true;
+            requestAnimationFrame(() => {
+                redrawWithPerspective();
+                perspectiveRedrawScheduled = false;
+            });
+        }
+        return;
+    }
+
     // Update cursor
-    if (!draggedPerspectiveCorner) {
+    if (!draggedPerspectiveCorner && !draggedRadiusAnchor) {
         const clickRadius = 15;
         let overCorner = false;
+        const radiusAnchorOffset = 25;
 
         const corners = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'];
+
+        // Calculate center for radius anchor positioning
+        const centerX = (perspectiveCorners.topLeft.x + perspectiveCorners.topRight.x +
+                        perspectiveCorners.bottomLeft.x + perspectiveCorners.bottomRight.x) / 4;
+        const centerY = (perspectiveCorners.topLeft.y + perspectiveCorners.topRight.y +
+                        perspectiveCorners.bottomLeft.y + perspectiveCorners.bottomRight.y) / 4;
+
+        // Check radius anchors first
         for (const cornerName of corners) {
             const corner = perspectiveCorners[cornerName];
-            const distance = Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2));
-            if (distance <= clickRadius) {
-                canvas.style.cursor = 'pointer';
-                overCorner = true;
-                break;
+            const dx = centerX - corner.x;
+            const dy = centerY - corner.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 0) {
+                const normalizedDx = dx / dist;
+                const normalizedDy = dy / dist;
+                const anchorX = corner.x + normalizedDx * radiusAnchorOffset;
+                const anchorY = corner.y + normalizedDy * radiusAnchorOffset;
+
+                const anchorDistance = Math.sqrt(Math.pow(x - anchorX, 2) + Math.pow(y - anchorY, 2));
+                if (anchorDistance <= clickRadius) {
+                    canvas.style.cursor = 'pointer';
+                    overCorner = true;
+                    break;
+                }
+            }
+        }
+
+        // Then check corner handles
+        if (!overCorner) {
+            for (const cornerName of corners) {
+                const corner = perspectiveCorners[cornerName];
+                const distance = Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2));
+                if (distance <= clickRadius) {
+                    canvas.style.cursor = 'pointer';
+                    overCorner = true;
+                    break;
+                }
             }
         }
 
@@ -2347,6 +2660,7 @@ function handlePerspectiveMouseMove(e) {
 
 function handlePerspectiveMouseUp(e) {
     draggedPerspectiveCorner = null;
+    draggedRadiusAnchor = null;
     // Redraw without magnifier
     redrawWithPerspective();
 }
@@ -2445,12 +2759,17 @@ async function verifyPasscode() {
 
     // Compare with stored hash
     if (enteredHash === configData.passcodeHash) {
-        // Correct passcode - store it for encryption/decryption
+        // Correct passcode - enable dev mode
         isDevModeUnlocked = true;
+        isDevModeUIEnabled = true;
         currentPasscode = enteredPasscode;
 
-        // Save passcode to sessionStorage (only for current session)
+        // Save dev mode state to sessionStorage (only for current session)
         sessionStorage.setItem('dev_passcode', enteredPasscode);
+        sessionStorage.setItem('dev_mode_enabled', 'true');
+
+        // Enable dev mode UI
+        enableDevModeUI();
 
         passcodeModal.style.display = 'none';
         settingsModal.style.display = 'flex';
@@ -2563,15 +2882,6 @@ async function clearGitHubToken() {
 function loadTokenStatus() {
     const encryptedToken = configData?.githubToken || '';
     const statusEl = document.getElementById('token-status');
-    const setAsDefaultToggle = document.getElementById('set-as-default-toggle');
-
-    // Load toggle state
-    if (setAsDefaultToggle) {
-        setAsDefaultToggle.checked = configData?.setAsDefaultEnabled !== false;
-    }
-
-    // Update "Set as Default" button visibility
-    updateSetAsDefaultButtonVisibility();
 
     if (encryptedToken && currentPasscode) {
         // Decrypt token for display
@@ -2632,13 +2942,13 @@ async function handleSetAsDefaultToggle(e) {
     }
 }
 
-// Update visibility of "Set as Default" button based on config
+// Update visibility of "Set as Default" button based on dev mode
 function updateSetAsDefaultButtonVisibility() {
     const setDefaultContainer = document.getElementById('set-default-container');
-    const isEnabled = configData?.setAsDefaultEnabled !== false;
 
     if (setDefaultContainer) {
-        if (isEnabled) {
+        // Show only if dev mode is enabled
+        if (isDevModeUIEnabled) {
             setDefaultContainer.style.display = 'block';
         } else {
             setDefaultContainer.style.display = 'none';
