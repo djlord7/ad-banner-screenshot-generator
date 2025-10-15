@@ -439,7 +439,34 @@
           "id": "game-6-ss1",
           "filename": "Dragon City 2.jpg",
           "bannerSize": "300x600",
-          "billboards": []
+          "billboards": [
+            {
+              "id": "billboard-1",
+              "x": 412,
+              "y": 458,
+              "width": 495,
+              "height": 367,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 412,
+                  "y": 458
+                },
+                "topRight": {
+                  "x": 907,
+                  "y": 458
+                },
+                "bottomLeft": {
+                  "x": 412,
+                  "y": 826
+                },
+                "bottomRight": {
+                  "x": 904,
+                  "y": 823
+                }
+              }
+            }
+          ]
         },
         {
           "id": "game-6-ss2",
