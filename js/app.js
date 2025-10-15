@@ -186,6 +186,15 @@ function setupEventListeners() {
     if (bannerUpload) bannerUpload.addEventListener('change', handleBannerUpload);
     if (removeBannerBtn) removeBannerBtn.addEventListener('click', handleRemoveBanner);
 
+    // Push All Live button
+    const pushAllBtn = document.getElementById('push-all-btn');
+    if (pushAllBtn) {
+        pushAllBtn.addEventListener('click', handlePushAllLive);
+    }
+
+    // Load queue on page load
+    updatePushAllButton();
+
     // Use event delegation for download button
     document.addEventListener('click', (e) => {
         if (e.target && e.target.id === 'download-btn') {
@@ -1506,64 +1515,184 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
         // Show loading message
         const setDefaultBtn = document.getElementById('set-default-btn');
         const originalText = setDefaultBtn.textContent;
-        setDefaultBtn.textContent = 'Saving...';
+        setDefaultBtn.textContent = 'Adding to Queue...';
         setDefaultBtn.disabled = true;
+
+        // Load existing queue from sessionStorage
+        let pendingChanges = JSON.parse(sessionStorage.getItem('pendingBillboardChanges') || '[]');
+
+        // Check if this game/screenshot already has a pending change
+        const existingIndex = pendingChanges.findIndex(
+            change => change.gameId === currentGame.id && change.screenshotId === currentScreenshot.id
+        );
+
+        const changeData = {
+            gameId: currentGame.id,
+            screenshotId: currentScreenshot.id,
+            billboards: JSON.parse(JSON.stringify(currentScreenshot.billboards)), // Deep clone
+            gameName: currentGame.name,
+            screenshotName: currentScreenshot.filename
+        };
+
+        if (existingIndex !== -1) {
+            // Update existing entry
+            pendingChanges[existingIndex] = changeData;
+            console.log('✅ Updated existing queue entry');
+        } else {
+            // Add new entry
+            pendingChanges.push(changeData);
+            console.log('✅ Added new queue entry');
+        }
+
+        // Save back to sessionStorage
+        sessionStorage.setItem('pendingBillboardChanges', JSON.stringify(pendingChanges));
+
+        // Update UI
+        updatePushAllButton();
+
+        // Reset button
+        setDefaultBtn.textContent = originalText;
+        setDefaultBtn.disabled = false;
+
+        alert(`✅ Added to Queue!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) for:\n${currentGame.name} - ${currentScreenshot.filename}\n\nClick "Push All Live" in the header when you're ready to publish all changes.`);
+
+    } catch (error) {
+        console.error('❌ Error adding to queue:', error);
+
+        // Reset button
+        const setDefaultBtn = document.getElementById('set-default-btn');
+        setDefaultBtn.textContent = 'Save to Queue';
+        setDefaultBtn.disabled = false;
+
+        alert(`❌ Failed to add to queue:\n\n${error.message}`);
+    }
+}
+
+// Update the Push All button visibility and count
+function updatePushAllButton() {
+    const pendingChanges = JSON.parse(sessionStorage.getItem('pendingBillboardChanges') || '[]');
+    const pushAllBtn = document.getElementById('push-all-btn');
+    const pendingCount = document.getElementById('pending-count');
+
+    if (pendingChanges.length > 0) {
+        pushAllBtn.style.display = 'block';
+        pendingCount.textContent = pendingChanges.length;
+    } else {
+        pushAllBtn.style.display = 'none';
+    }
+}
+
+// Handle pushing all pending changes to GitHub
+window.handlePushAllLive = async function handlePushAllLive() {
+    console.log('🚀 handlePushAllLive called');
+
+    // Load pending changes
+    const pendingChanges = JSON.parse(sessionStorage.getItem('pendingBillboardChanges') || '[]');
+
+    if (pendingChanges.length === 0) {
+        alert('No pending changes to push.');
+        return;
+    }
+
+    // Check if GitHub token is configured
+    let token = getGitHubToken();
+    if (!token) {
+        if (!currentPasscode) {
+            const passcode = await promptForPasscode();
+            if (!passcode) {
+                return;
+            }
+            token = getGitHubToken();
+        }
+
+        if (!token) {
+            alert('GitHub token not configured!\n\nPlease configure your GitHub token in Settings first.');
+            return;
+        }
+    }
+
+    // Show confirmation dialog
+    const confirmMsg = `You are about to push ${pendingChanges.length} billboard configuration(s) to GitHub:\n\n` +
+        pendingChanges.map(c => `• ${c.gameName} - ${c.screenshotName} (${c.billboards.length} billboard(s))`).join('\n') +
+        `\n\nContinue?`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    try {
+        // Show loading state
+        const pushAllBtn = document.getElementById('push-all-btn');
+        const originalText = pushAllBtn.innerHTML;
+        pushAllBtn.innerHTML = '⏳ Pushing...';
+        pushAllBtn.disabled = true;
 
         console.log('📡 Fetching games.json from GitHub...');
 
         // Fetch current games.json from GitHub
         const { content: githubGamesData, sha } = await fetchGamesJsonFromGitHub(token);
 
-        console.log('✅ Fetched games.json, finding game and screenshot...');
+        console.log('✅ Fetched games.json, applying all changes...');
 
-        // Find the game and screenshot in the data
-        const gameIndex = githubGamesData.games.findIndex(g => g.id === currentGame.id);
-        if (gameIndex === -1) {
-            throw new Error(`Game ${currentGame.name} not found in games.json`);
+        // Apply all pending changes
+        let totalBillboards = 0;
+        for (const change of pendingChanges) {
+            const gameIndex = githubGamesData.games.findIndex(g => g.id === change.gameId);
+            if (gameIndex === -1) {
+                console.warn(`Game ${change.gameName} not found, skipping`);
+                continue;
+            }
+
+            const screenshotIndex = githubGamesData.games[gameIndex].screenshots.findIndex(
+                s => s.id === change.screenshotId
+            );
+            if (screenshotIndex === -1) {
+                console.warn(`Screenshot ${change.screenshotName} not found, skipping`);
+                continue;
+            }
+
+            // Apply the billboard changes
+            githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards = change.billboards;
+            totalBillboards += change.billboards.length;
+            console.log(`✅ Applied changes for ${change.gameName} - ${change.screenshotName}`);
         }
 
-        const screenshotIndex = githubGamesData.games[gameIndex].screenshots.findIndex(
-            s => s.id === currentScreenshot.id
-        );
-        if (screenshotIndex === -1) {
-            throw new Error(`Screenshot ${currentScreenshot.filename} not found in games.json`);
-        }
-
-        console.log('✅ Found game and screenshot, updating billboards...');
-        console.log('Saving billboards:', currentScreenshot.billboards);
-
-        // Save ALL billboards for this screenshot
-        githubGamesData.games[gameIndex].screenshots[screenshotIndex].billboards = currentScreenshot.billboards;
-
-        console.log('📤 Committing to GitHub...');
+        console.log('📤 Committing all changes to GitHub...');
 
         // Commit the updated games.json to GitHub
-        const commitResponse = await commitGamesJsonToGitHub(token, githubGamesData, sha);
+        const commitMessage = `Update billboard configurations for ${pendingChanges.length} screenshot(s)\n\n` +
+            pendingChanges.map(c => `- ${c.gameName}: ${c.screenshotName} (${c.billboards.length} billboard(s))`).join('\n');
+
+        const commitResponse = await commitGamesJsonToGitHub(token, githubGamesData, sha, commitMessage);
         const commitSha = commitResponse.commit.sha;
 
         console.log('✅ Successfully committed to GitHub with SHA:', commitSha);
 
-        // Update local gamesData to reflect changes
+        // Update local gamesData
         gamesData = githubGamesData;
 
-        // Reset button and show success
-        setDefaultBtn.textContent = originalText;
-        setDefaultBtn.disabled = false;
-
-        alert(`✅ Success!\n\nSaved ${currentScreenshot.billboards.length} billboard(s) as default for this screenshot.\n\nWe're tracking the deployment status and will prompt you when it's live.`);
-
-        // Poll GitHub Pages deployment status
-        pollForGitHubUpdate(token, commitSha, currentGame.id, currentScreenshot.id, currentScreenshot.billboards.length);
-
-    } catch (error) {
-        console.error('❌ Error saving to GitHub:', error);
+        // Clear the queue
+        sessionStorage.removeItem('pendingBillboardChanges');
+        updatePushAllButton();
 
         // Reset button
-        const setDefaultBtn = document.getElementById('set-default-btn');
-        setDefaultBtn.textContent = 'Set as Default';
-        setDefaultBtn.disabled = false;
+        pushAllBtn.innerHTML = originalText;
+        pushAllBtn.disabled = false;
 
-        alert(`❌ Failed to save to GitHub:\n\n${error.message}\n\nPlease check:\n1. Your GitHub token has 'repo' permissions\n2. You have access to the repository\n3. Your internet connection is working`);
+        alert(`✅ Success!\n\nPushed ${pendingChanges.length} configuration(s) with ${totalBillboards} total billboard(s) to GitHub.\n\nWe're tracking the deployment status and will notify you when it's live.`);
+
+        // Poll for deployment
+        pollForGitHubUpdate(token, commitSha, null, null, totalBillboards);
+
+    } catch (error) {
+        console.error('❌ Error pushing to GitHub:', error);
+
+        // Reset button
+        const pushAllBtn = document.getElementById('push-all-btn');
+        pushAllBtn.innerHTML = '🚀 Push <span id="pending-count">' + pendingChanges.length + '</span> Live';
+        pushAllBtn.disabled = false;
+
+        alert(`❌ Failed to push to GitHub:\n\n${error.message}\n\nPlease check:\n1. Your GitHub token has 'repo' permissions\n2. You have access to the repository\n3. Your internet connection is working`);
     }
 }
 
@@ -3034,11 +3163,13 @@ async function fetchGamesJsonFromGitHub(token) {
 }
 
 // Commit updated games.json to GitHub
-async function commitGamesJsonToGitHub(token, gamesData, sha) {
+async function commitGamesJsonToGitHub(token, gamesData, sha, customMessage = null) {
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GAMES_JSON_PATH}`;
-    
+
     const content = btoa(JSON.stringify(gamesData, null, 2)); // Encode to base64
-    
+
+    const message = customMessage || `Update billboard coordinates for ${currentGame.name} - ${currentScreenshot.filename}`;
+
     const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -3047,17 +3178,17 @@ async function commitGamesJsonToGitHub(token, gamesData, sha) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            message: `Update billboard coordinates for ${currentGame.name} - ${currentScreenshot.filename}`,
+            message: message,
             content: content,
             sha: sha,
             branch: GITHUB_BRANCH
         })
     });
-    
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(`Failed to commit: ${error.message}`);
     }
-    
+
     return await response.json();
 }

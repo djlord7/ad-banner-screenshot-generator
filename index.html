@@ -11,6 +11,9 @@
         <header>
             <h1>Ad Banner Screenshot Generator</h1>
             <p>Automated screenshot generation for in-game advertising</p>
+            <button id="push-all-btn" class="btn btn-success" style="position: absolute; top: 20px; right: 160px; display: none;">
+                🚀 Push <span id="pending-count">0</span> Live
+            </button>
             <button id="settings-btn" class="btn btn-secondary" style="position: absolute; top: 20px; right: 20px;">🔓 Enable Dev Mode</button>
         </header>
 
@@ -159,7 +162,7 @@
 
                             <!-- Set as Default buttons (shown after confirm) -->
                             <div id="set-default-container" style="display: none; margin-top: 15px;">
-                                <button id="set-default-btn" class="btn btn-primary" onclick="console.log('Set as Default clicked'); window.handleSetAsDefault && window.handleSetAsDefault();">Set as Default</button>
+                                <button id="set-default-btn" class="btn btn-primary" onclick="console.log('Set as Default clicked'); window.handleSetAsDefault && window.handleSetAsDefault();">Save to Queue</button>
                             </div>
                         </div>
 
