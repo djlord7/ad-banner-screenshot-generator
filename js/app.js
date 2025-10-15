@@ -2900,9 +2900,8 @@ async function verifyPasscode() {
         // Enable dev mode UI
         enableDevModeUI();
 
+        // Just close passcode modal, don't open settings
         passcodeModal.style.display = 'none';
-        settingsModal.style.display = 'flex';
-        loadTokenStatus();
     } else {
         // Incorrect passcode
         passcodeError.textContent = '❌ Incorrect passcode';
