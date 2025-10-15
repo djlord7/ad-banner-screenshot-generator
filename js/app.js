@@ -1395,10 +1395,26 @@ window.handleSetAsDefault = async function handleSetAsDefault() {
     }
 
     // Check if GitHub token is configured
-    const token = getGitHubToken();
+    let token = getGitHubToken();
     if (!token) {
-        alert('GitHub token not configured!\n\nPlease click the Settings button (⚙️) in the header to configure your GitHub Personal Access Token first.');
-        return;
+        // If no token, it might be because passcode is not set
+        // Prompt for passcode first
+        if (!currentPasscode) {
+            console.log('⚠️ No passcode set, prompting user...');
+            const passcode = await promptForPasscode();
+            if (!passcode) {
+                // User cancelled or entered wrong passcode
+                return;
+            }
+            // Try getting token again with the passcode
+            token = getGitHubToken();
+        }
+
+        // If still no token, it means no token is saved
+        if (!token) {
+            alert('GitHub token not configured!\n\nPlease click the Settings button (⚙️) in the header to configure your GitHub Personal Access Token first.');
+            return;
+        }
     }
 
     try {
@@ -2225,6 +2241,39 @@ async function sha256(message) {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     return hashHex;
+}
+
+// Prompt for passcode inline (for Set as Default functionality)
+async function promptForPasscode() {
+    return new Promise((resolve) => {
+        const passcode = prompt('🔒 Enter your 6-digit developer passcode to continue:');
+
+        if (!passcode) {
+            resolve(null); // User cancelled
+            return;
+        }
+
+        if (passcode.length !== 6) {
+            alert('❌ Passcode must be 6 digits');
+            resolve(null);
+            return;
+        }
+
+        // Verify passcode
+        sha256(passcode).then(hash => {
+            if (hash === configData.passcodeHash) {
+                // Correct passcode - store it
+                currentPasscode = passcode;
+                isDevModeUnlocked = true;
+                sessionStorage.setItem('dev_passcode', passcode);
+                console.log('✅ Passcode verified and stored for session');
+                resolve(passcode);
+            } else {
+                alert('❌ Incorrect passcode');
+                resolve(null);
+            }
+        });
+    });
 }
 
 // Simple XOR encryption/decryption with passcode as key
