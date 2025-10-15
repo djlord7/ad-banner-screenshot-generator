@@ -99,6 +99,32 @@
                   "y": 1009
                 }
               }
+            },
+            {
+              "id": "billboard-1760511317697",
+              "x": 654,
+              "y": 845,
+              "width": 169,
+              "height": 172,
+              "rotation": 0,
+              "perspective": {
+                "topLeft": {
+                  "x": 654,
+                  "y": 845
+                },
+                "topRight": {
+                  "x": 823,
+                  "y": 848
+                },
+                "bottomLeft": {
+                  "x": 654,
+                  "y": 1017
+                },
+                "bottomRight": {
+                  "x": 820,
+                  "y": 1017
+                }
+              }
             }
           ]
         },
