@@ -202,7 +202,48 @@ header p {
 .billboard-count {
     color: var(--text-secondary);
     font-size: 0.9rem;
-    margin-top: 5px;
+    margin-top: 8px;
+}
+
+/* Ratio Badges */
+.ratio-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.ratio-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.ratio-badge-horizontal {
+    background: #3b82f6;
+}
+
+.ratio-badge-landscape {
+    background: #60a5fa;
+}
+
+.ratio-badge-square {
+    background: #f59e0b;
+}
+
+.ratio-badge-portrait {
+    background: #34d399;
+}
+
+.ratio-badge-vertical {
+    background: #10b981;
+}
+
+.ratio-badge-none {
+    background: #94a3b8;
 }
 
 /* Editor Section */

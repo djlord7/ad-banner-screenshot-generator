@@ -349,6 +349,209 @@ function handleGameSelection(e) {
     displayScreenshotGallery();
 }
 
+// Helper function to analyze billboard ratios
+function getBillboardRatios(screenshot) {
+    if (!screenshot.billboards || screenshot.billboards.length === 0) {
+        return [];
+    }
+
+    const ratios = new Set();
+
+    screenshot.billboards.forEach(billboard => {
+        let ratio;
+
+        // If perspective data exists, calculate ratio from perspective corners
+        if (billboard.perspective) {
+            const p = billboard.perspective;
+
+            // Calculate average width (top + bottom)
+            const topWidth = Math.sqrt(
+                Math.pow(p.topRight.x - p.topLeft.x, 2) +
+                Math.pow(p.topRight.y - p.topLeft.y, 2)
+            );
+            const bottomWidth = Math.sqrt(
+                Math.pow(p.bottomRight.x - p.bottomLeft.x, 2) +
+                Math.pow(p.bottomRight.y - p.bottomLeft.y, 2)
+            );
+            const avgWidth = (topWidth + bottomWidth) / 2;
+
+            // Calculate average height (left + right)
+            const leftHeight = Math.sqrt(
+                Math.pow(p.bottomLeft.x - p.topLeft.x, 2) +
+                Math.pow(p.bottomLeft.y - p.topLeft.y, 2)
+            );
+            const rightHeight = Math.sqrt(
+                Math.pow(p.bottomRight.x - p.topRight.x, 2) +
+                Math.pow(p.bottomRight.y - p.topRight.y, 2)
+            );
+            const avgHeight = (leftHeight + rightHeight) / 2;
+
+            ratio = avgWidth / avgHeight;
+        } else {
+            // Fallback to bounding box ratio
+            ratio = billboard.width / billboard.height;
+        }
+
+        // 5-category classification for clearer expectations
+        if (ratio > 1.3) {
+            ratios.add('Horizontal');
+        } else if (ratio > 1.1) {
+            ratios.add('Landscape');
+        } else if (ratio >= 0.9) {
+            ratios.add('Square');
+        } else if (ratio > 0.77) {
+            ratios.add('Portrait');
+        } else {
+            ratios.add('Vertical');
+        }
+    });
+
+    return Array.from(ratios);
+}
+
+// Get bounding box that contains all billboards
+function getBillboardsBoundingBox(screenshot) {
+    if (!screenshot.billboards || screenshot.billboards.length === 0) {
+        return null;
+    }
+
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    screenshot.billboards.forEach(billboard => {
+        if (billboard.perspective) {
+            const corners = [
+                billboard.perspective.topLeft,
+                billboard.perspective.topRight,
+                billboard.perspective.bottomLeft,
+                billboard.perspective.bottomRight
+            ];
+
+            corners.forEach(corner => {
+                minX = Math.min(minX, corner.x);
+                minY = Math.min(minY, corner.y);
+                maxX = Math.max(maxX, corner.x);
+                maxY = Math.max(maxY, corner.y);
+            });
+        }
+    });
+
+    if (minX === Infinity) return null;
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Add 20% padding around the bounding box
+    const padding = 0.2;
+    const paddingX = width * padding;
+    const paddingY = height * padding;
+
+    return {
+        x: Math.max(0, minX - paddingX),
+        y: Math.max(0, minY - paddingY),
+        width: width + (paddingX * 2),
+        height: height + (paddingY * 2)
+    };
+}
+
+// Generate thumbnail with billboard overlays
+function generateThumbnailWithBillboards(screenshot, callback) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = `public/screenshots/${screenshot.filename}`;
+
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set thumbnail size
+        const thumbnailWidth = 300;
+        const thumbnailHeight = 200;
+        canvas.width = thumbnailWidth;
+        canvas.height = thumbnailHeight;
+
+        // Get billboard bounding box for cropping
+        const bbox = getBillboardsBoundingBox(screenshot);
+
+        let sourceX, sourceY, sourceWidth, sourceHeight;
+        let scale, offsetX, offsetY;
+
+        if (bbox) {
+            // Crop to billboard region with padding
+            sourceX = Math.max(0, bbox.x);
+            sourceY = Math.max(0, bbox.y);
+            sourceWidth = Math.min(bbox.width, img.width - sourceX);
+            sourceHeight = Math.min(bbox.height, img.height - sourceY);
+
+            // Calculate scale to fit cropped region into thumbnail
+            scale = Math.min(thumbnailWidth / sourceWidth, thumbnailHeight / sourceHeight);
+            const scaledWidth = sourceWidth * scale;
+            const scaledHeight = sourceHeight * scale;
+            offsetX = (thumbnailWidth - scaledWidth) / 2;
+            offsetY = (thumbnailHeight - scaledHeight) / 2;
+
+            // Draw cropped and scaled image
+            ctx.drawImage(
+                img,
+                sourceX, sourceY, sourceWidth, sourceHeight,
+                offsetX, offsetY, scaledWidth, scaledHeight
+            );
+        } else {
+            // No billboards - show full image
+            sourceX = 0;
+            sourceY = 0;
+            sourceWidth = img.width;
+            sourceHeight = img.height;
+
+            scale = Math.min(thumbnailWidth / img.width, thumbnailHeight / img.height);
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
+            offsetX = (thumbnailWidth - scaledWidth) / 2;
+            offsetY = (thumbnailHeight - scaledHeight) / 2;
+
+            ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+        }
+
+        // Draw billboard overlays (adjusted for crop)
+        if (screenshot.billboards && screenshot.billboards.length > 0) {
+            screenshot.billboards.forEach(billboard => {
+                if (billboard.perspective) {
+                    ctx.save();
+                    ctx.beginPath();
+
+                    const tl = billboard.perspective.topLeft;
+                    const tr = billboard.perspective.topRight;
+                    const br = billboard.perspective.bottomRight;
+                    const bl = billboard.perspective.bottomLeft;
+
+                    // Adjust coordinates for crop offset
+                    const adjustX = (x) => offsetX + (x - sourceX) * scale;
+                    const adjustY = (y) => offsetY + (y - sourceY) * scale;
+
+                    ctx.moveTo(adjustX(tl.x), adjustY(tl.y));
+                    ctx.lineTo(adjustX(tr.x), adjustY(tr.y));
+                    ctx.lineTo(adjustX(br.x), adjustY(br.y));
+                    ctx.lineTo(adjustX(bl.x), adjustY(bl.y));
+                    ctx.closePath();
+
+                    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            });
+        }
+
+        callback(canvas.toDataURL());
+    };
+
+    img.onerror = function() {
+        callback(null);
+    };
+}
+
 // Display screenshot gallery
 function displayScreenshotGallery() {
     screenshotGallery.innerHTML = '';
@@ -358,27 +561,46 @@ function displayScreenshotGallery() {
         item.className = 'gallery-item';
         item.onclick = () => selectScreenshot(index);
 
-        // Create image element for gallery preview
-        const imgElement = document.createElement('img');
-        imgElement.src = `public/screenshots/${screenshot.filename}`;
-        imgElement.alt = screenshot.filename;
-        imgElement.style.width = '100%';
-        imgElement.style.height = '200px';
-        imgElement.style.objectFit = 'cover';
-        imgElement.onerror = function() {
-            this.parentElement.innerHTML = '<span>Screenshot Preview</span>';
-        };
-
         const imageDiv = document.createElement('div');
         imageDiv.className = 'gallery-item-image';
-        imageDiv.appendChild(imgElement);
+        imageDiv.innerHTML = '<span>Loading...</span>';
+
+        // Generate thumbnail with billboard overlays
+        generateThumbnailWithBillboards(screenshot, (thumbnailDataUrl) => {
+            if (thumbnailDataUrl) {
+                const imgElement = document.createElement('img');
+                imgElement.src = thumbnailDataUrl;
+                imgElement.alt = screenshot.filename;
+                imgElement.style.width = '100%';
+                imgElement.style.height = '200px';
+                imgElement.style.objectFit = 'contain';
+                imageDiv.innerHTML = '';
+                imageDiv.appendChild(imgElement);
+            } else {
+                imageDiv.innerHTML = '<span>Screenshot Preview</span>';
+            }
+        });
+
+        // Get billboard ratios
+        const ratios = getBillboardRatios(screenshot);
+        const ratioText = ratios.length > 0 ? ratios.join(' • ') : 'No billboards';
 
         const infoDiv = document.createElement('div');
         infoDiv.className = 'gallery-item-info';
+
+        let ratioBadgesHTML = '';
+        if (ratios.length > 0) {
+            ratioBadgesHTML = ratios.map(ratio =>
+                `<span class="ratio-badge ratio-badge-${ratio.toLowerCase()}">${ratio}</span>`
+            ).join('');
+        } else {
+            ratioBadgesHTML = '<span class="ratio-badge ratio-badge-none">No billboards</span>';
+        }
+
         infoDiv.innerHTML = `
-            <h3>${screenshot.bannerSize}</h3>
+            <div class="ratio-badges">${ratioBadgesHTML}</div>
             <div class="billboard-count">
-                ${screenshot.billboards.length} billboard${screenshot.billboards.length > 1 ? 's' : ''}
+                ${screenshot.billboards.length} billboard${screenshot.billboards.length !== 1 ? 's' : ''}
             </div>
         `;
 
